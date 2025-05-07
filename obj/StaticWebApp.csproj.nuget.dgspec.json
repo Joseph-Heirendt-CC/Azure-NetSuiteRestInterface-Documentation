@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\jHeirendt_ds1\\NetSuiteRestReference\\NetSuiteRestReference.csproj": {}
+    "C:\\New folder (2)\\StaticWebApp\\StaticWebApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\jHeirendt_ds1\\NetSuiteRestReference\\NetSuiteRestReference.csproj": {
+    "C:\\New folder (2)\\StaticWebApp\\StaticWebApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\jHeirendt_ds1\\NetSuiteRestReference\\NetSuiteRestReference.csproj",
-        "projectName": "NetSuiteRestReference",
-        "projectPath": "C:\\Users\\jHeirendt_ds1\\NetSuiteRestReference\\NetSuiteRestReference.csproj",
+        "projectUniqueName": "C:\\New folder (2)\\StaticWebApp\\StaticWebApp.csproj",
+        "projectName": "StaticWebApp",
+        "projectPath": "C:\\New folder (2)\\StaticWebApp\\StaticWebApp.csproj",
         "packagesPath": "C:\\Users\\jHeirendt_ds1\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\jHeirendt_ds1\\NetSuiteRestReference\\obj\\",
+        "outputPath": "C:\\New folder (2)\\StaticWebApp\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\jHeirendt_ds1\\AppData\\Roaming\\NuGet\\NuGet.Config"
