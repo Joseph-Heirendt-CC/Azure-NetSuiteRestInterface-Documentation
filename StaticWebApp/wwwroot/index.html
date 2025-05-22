@@ -4,17 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure - NetSuite REST Interface - V1</title>
+    <title>Azure - NetSuite REST Interface</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             display: flex;
             margin: 0;
+            background-color: rgb(250, 250, 250);
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         .sidebar {
             width: 240px;
-            background-color: #f4f4f4;
+            background-color: #faf7f7;
             padding: 20px;
             border-right: 1px solid #ccc;
             position: fixed;
@@ -23,10 +28,11 @@
         }
 
         .content {
-            margin-left: 275px;
+            margin-left: 285px;
             /* Adjust based on sidebar width */
             padding: 20px;
-            flex-grow: 1;
+            max-width: calc(100% - 285px);
+            box-sizing: border
         }
 
         h1,
@@ -36,7 +42,7 @@
         }
 
         pre {
-            background-color: #6d8b59;
+            background-color: #3b7515;
             padding: 5px;
             border-radius: 5px;
         }
@@ -44,7 +50,7 @@
         .sidebar a {
             display: block;
             padding: 7px;
-            color: #034122;
+            color: #073002;
             text-decoration: none;
         }
 
@@ -112,6 +118,89 @@
     {
         "query": "select top(10) * from transaction where type = 'SalesOrd'"
     }
+            </pre>
+            <p><strong>Success Response:</strong></p>
+            <pre>
+    {
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://11244339-sb1.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql"
+        }
+    ],
+    "count": 1,
+    "hasMore": false,
+    "items": [
+        {
+            "links": [],
+            "abbrevtype": "SALESORD",
+            "amountunbilled": "0",
+            "balsegstatus": "5",
+            "billingstatus": "F",
+            "closedate": "2/10/2025",
+            "createddate": "2/10/2025",
+            "currency": "1",
+            "custbody_15699_exclude_from_ep_process": "F",
+            "customform": "121",
+            "customtype": "-1",
+            "daysopen": "0",
+            "entity": "7",
+            "estgrossprofit": "120",
+            "estgrossprofitpercent": "1",
+            "exchangerate": "1",
+            "foreigntotal": "120",
+            "id": "1",
+            "isfinchrg": "F",
+            "isreversal": "F",
+            "lastmodifieddate": "2/10/2025",
+            "memorized": "F",
+            "needsbill": "F",
+            "nexus": "1",
+            "number": "1",
+            "ordpicked": "T",
+            "paymenthold": "F",
+            "posting": "F",
+            "postingperiod": "38",
+            "prevdate": "2/10/2025",
+            "printedpickingticket": "F",
+            "recordtype": "salesorder",
+            "shipcarrier": "FedEx/USPS/More",
+            "shipcomplete": "F",
+            "shipdate": "2/10/2025",
+            "status": "G",
+            "tobeprinted": "F",
+            "totalcostestimate": "0",
+            "trandate": "2/10/2025",
+            "trandisplayname": "Sales Order #SO01",
+            "tranid": "SO01",
+            "transactionnumber": "SALESORD1",
+            "type": "SalesOrd",
+            "typebaseddocumentnumber": "SO01",
+            "userevenuearrangement": "F",
+            "visibletocustomer": "T",
+            "void": "F",
+            "voided": "F"
+        }
+    ],
+    "offset": 0,
+    "totalResults": 1
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        {
+            "detail": "Invalid search query. Detailed unprocessed description follows. Search error occurred: 
+                Failed to parse SQL [select top(1) * from transaction where type = 'SalesOrd]: end of input, state:1224(10102) near:  (0,0, token code:0).",
+            "o:errorQueryParam": "q",
+            "o:errorCode": "INVALID_PARAMETER"
+        }
+    ]
+}
             </pre>
         </div>
 
@@ -186,25 +275,76 @@
                 </pre>
         </div>
 
-        <h2 id="netsuiteTransformRequest">Function: <code>netsuiteDeleteRequest</code></h2>
+        <h2 id="netsuiteTransformRequest">Function: <code>netsuiteTransformRequest</code></h2>
         <p><strong>Endpoint:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteTransformRequest</code>
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <div class="example">
-            <h4>Ex 1: Delete Customer Record</h4>
-            <p><strong>Method:</strong> DELETE</p>
-            <p><strong>URL:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteDeleteRequest</code>
+            <h4>Ex 1: Sales Order to Item Fulfillment</h4>
+            <p><strong>Method:</strong> POST</p>
+            <p><strong>URL:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteTransformRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
     {
-        "recordType": "customer",
-        "recordId": "6993"
+        "fromRecordType": "salesOrder",
+        "fromId": "1080",
+        "toRecordType": "itemFulfillment",
+        "requestBody": {
+            "memo": "test memo details",
+            "item": {
+                "items": [
+                            {
+                              "orderLine": 1,
+                              "quantity": 2,
+                              "itemReceive": true
+                            }
+                        ]
+                    }
+        }
     }
-                </pre>
-        </div>
+    </pre>
+    <p><strong>Success Response:</strong></p>
+    <pre>
+    {
+        "title": "Success",
+        "status": 200,
+        "message": "The Transform operation was completed successfully.",
+        "internalid": "979",
+        "from_internalId": "978",
+        "rawResponse": {
+            "X-N-OperationId": "8537be95-8a68-4371-a4fd-31da88770678",
+            "NS_RTIMER_COMPOSITE": "33806079:706172746E6572733131312E70726F642D6961642D6E6132302E636F72652E6E732E696E7465726E616C:80",
+            "Strict-Transport-Security": "max-age=31536000",
+            "X-Content-Type-Options": "nosniff",
+            "Pragma": "No-Cache",
+            "Cache-Control": "no-cache",
+            "X-NetSuite-JobId": "3f77618f-0aba-4bec-a46c-3d202b35c2be",
+            "Location": "https://11244339-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/itemfulfillment/979",
+            "Vary": "User-Agent",
+            "Date": "Thu, 22 May 2025 15:49:09 GMT",
+            "Connection": "keep-alive",
+            "Akamai-GRN": "0.154a0760.1747928936.db3ae38"
+        }
+    }
+    </pre>
+    <p><strong>Failure Response:</strong></p>
+    <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "o:errorDetails": [
+            {
+                "detail": "Error while accessing a resource. You must have at least one valid line item for this transaction.",
+                "o:errorCode": "USER_ERROR"
+            }
+        ]
+    }
+    </pre>
+    </div>
 
         <h2 id="netsuiteDeleteRequest">Function: <code>netsuiteDeleteRequest</code></h2>
         <p><strong>Endpoint:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteDeleteRequest</code>
