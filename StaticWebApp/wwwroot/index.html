@@ -69,6 +69,7 @@
         <a href="#netsuiteSuiteqlQuery">netsuiteSuiteqlQuery</a>
         <a href="#netsuitePatchRequest">netsuitePatchRequest</a>
         <a href="#netsuitePostRequest">netsuitePostRequest</a>
+        <a href="#netsuiteGetRequest">netsuiteGetRequest</a>
         <a href="#netsuiteTransformRequest">netsuiteTransformRequest</a>
         <a href="#netsuiteDeleteRequest">netsuiteDeleteRequest</a>
         <a href="#error-handling">Error Handling</a>
@@ -250,6 +251,9 @@
                 </pre>
         </div>
 
+
+        
+
         <h2 id="netsuitePostRequest">Function: <code>netsuitePostRequest</code></h2>
         <p><strong>Endpoint:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuitePostRequest</code></p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
@@ -274,6 +278,116 @@
     }
                 </pre>
         </div>
+
+
+        <h2 id="netsuiteGetRequest">Function: <code>netsuiteGetRequest</code></h2>
+        <p><strong>Endpoint:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code></p>
+        <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
+
+        <div class="example">
+            <h4>Ex 1: Get Customer Record by Internal ID</h4>
+            <p><strong>Method:</strong>POST, GET</p>
+            <p><strong>URL:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code></p>
+            <p><strong>Headers:</strong> <code>x-functions-key</code></p>
+            <p><strong>Payload:</strong></p>
+            <pre>
+    {
+        "recordType": "customer",
+        "recordId": "6991",
+        "extension": ""
+    }
+    <p><strong>Success Response:</strong></p>
+    <pre>
+    {
+        "links": [
+        {
+            "rel": "self",
+            "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/7092"
+        }
+        ],
+        "addressBook": {
+        "links": [
+            {
+                "rel": "self",
+                "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/7092/addressBook"
+            }
+        ]
+        },
+        "aging": 0.0,
+        "aging1": 0.0,
+        "aging2": 0.0,
+        "aging3": 0.0,
+        "aging4": 0.0,
+        "balance": 0.0,
+        ......
+        "comments": "Comment update for example PATCH",
+        "companyName": "ABC Corp",
+        "unbilledOrders": 0.0,
+        "unsubscribe": true
+    }
+    </pre>
+    <p><strong>Failure Response:</strong></p>
+    <pre>
+   {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+        "title": "Not Found",
+        "status": 404,
+        "o:errorDetails": [
+            {
+                "detail": "The record instance does not exist. Provide a valid record instance ID.",
+                "o:errorCode": "NONEXISTENT_ID"
+            }
+    ]
+    }
+    </pre>
+    </pre>
+    </div>
+            <div class="example">
+            <h4>Ex 2: Get Customer Record by External ID</h4>
+            <p><strong>Method:</strong>POST, GET</p>
+            <p><strong>URL:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code></p>
+            <p><strong>Headers:</strong> <code>x-functions-key</code></p>
+            <p><strong>Payload:</strong></p>
+            <pre>
+    {
+        "recordType": "customer",
+        "recordId": "eid:Cusomer-111111111",
+        "extension": ""
+    }
+                </pre>
+        </div>
+
+                    <div class="example">
+            <h4>Ex 3: Get Customer Record with Filtering</h4>
+            <p><strong>Method:</strong>POST, GET</p>
+            <p><strong>URL:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code></p>
+            <p><strong>Headers:</strong> <code>x-functions-key</code></p>
+            <p><strong>Payload:</strong></p>
+            <pre>
+    {
+    "recordType": "customer",
+    "recordId": "743",
+    "extensions": "?fields=EntityId,aging,aging1"
+    }
+         <p><strong>Success Response with Filters:</strong></p>
+    <pre>
+{
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/743?fields=EntityId%2Caging%2Caging1"
+        }
+    ],
+    "aging": 0.0,
+    "aging1": 0.0,
+    "entityId": "STCO08"
+}
+    </pre>
+                </pre>
+        </div>
+
+
+
 
         <h2 id="netsuiteTransformRequest">Function: <code>netsuiteTransformRequest</code></h2>
         <p><strong>Endpoint:</strong> <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteTransformRequest</code>
