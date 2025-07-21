@@ -78,30 +78,34 @@
 
     <div class="content">
         <h1 id="API Documentation">Azure - NetSuite REST Interface</h1>
-        <p>This application targets the Lagos NetSuite Sandbox environment. It provides endpoints for executing SuiteQL
-            queries and performing CRUD operations on NetSuite records through Azure Functions.</p>
-
+        <p>
+           This documentation provides a comprehensive overview of an Azure Function application built to interface seamlessly with NetSuite's REST API. Designed for performance and scalability, the application minimizes computational overhead while enabling secure, real-time access to NetSuite data. Leveraging serverless architecture and optimized request handling, it supports efficient execution of SuiteQL queries and CRUD operations. Ideal for automation workflows, system integrations, and data-driven services, this solution eliminates the need for complex middleware and delivers a lightweight, maintainable interface for enterprise environments.</p>
         <h2 id="key-features">Key Features</h2>
         <ul>
-            <li>Endpoint Integration: Dedicated endpoints for executing SuiteQL queries and performing CRUD operations.
-            </li>
+            <li>Endpoint Integration: Dedicated endpoints for executing SuiteQL queries and performing CRUD operations.</li>
             <li>Authentication: Secure access using an authentication header (<code>x-functions-key</code>).</li>
             <li>Query Execution: Dynamic data retrieval from NetSuite.</li>
-            <li>Error Handling: Robust mechanisms to manage improperly formatted queries.</li>
+
+            <li>Continuous Improvement: CI/CD Pipeline for continuous updates and enhancements with the ability to push updates to client Azure environmments through Github Actions.</li>
         </ul>
 
         <h2 id="use-cases">Use Cases</h2>
         <ul>
-            <li>Data Retrieval: Extract detailed information from NetSuite.</li>
             <li>Integration: Integrate NetSuite data with other Azure services.</li>
+            <li>Data Retrieval: Extract detailed information from NetSuite.</li>
+            <li>Record Management: Create, update, and delete NetSuite records available via REST API.</li>
+            <li>Data Transformation: Convert records from one type to another (e.g., Sales Order to Item Fulfillment, Sales Order to Invoice).</li>
             <li>Automation: Automate routine NetSuite operations.</li>
         </ul>
 
         <h2 id="benefits">Benefits</h2>
         <ul>
-            <li>Scalability: Leveraging Azure's serverless architecture.</li>
+            <li>Solution Cost: Extremeley low operational overhead.</li>
+            <li>Scalability: Built on Azure Functions, allowing for automatic scaling based on demand.</li>
             <li>Security: Built-in authentication and secure communication protocols.</li>
             <li>Flexibility: Execute custom SuiteQL queries.</li>
+            <li>Efficiency: Streamlined data access and manipulation through RESTful endpoints.</li>
+            <li>In House Development: Developed in-house, allowing for tailored solutions to meet specific business needs.</li>
         </ul>
 
         <h2 id="netsuiteSuiteqlQuery">Function: <code>netsuiteSuiteqlQuery</code></h2>
