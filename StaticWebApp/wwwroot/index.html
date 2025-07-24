@@ -518,7 +518,25 @@
         </div>
 
         <h2 id="error-handling">Error Handling</h2>
-        <p>Improperly formatted queries or missing required fields will result in a 500 server error code.</p>
+        <p><strong>Improperly Formatted Requests</strong></p>
+        <p>Queries or Post Requests that do not contain valid JSON will result in a <strong>500</strong> error code response. Ensure all objects are properly wrapped and formatted before proceeding.</p>
+        <p><strong>SuiteQL & REST Requests</strong></p>
+        <p>All NetSuite error messages are returned from the server upon a failed API call, along with a <stong>400</stong> error code response. The format of the messages is inherited from the NetSuite server and typically resembles the below message.</p>
+<div class="example">
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        {
+            "detail": "Error while accessing a resource. Please enter value(s) for: Primary Subsidiary.",
+            "o:errorCode": "USER_ERROR"
+        }
+    ]
+}
+                </pre>
+        </div>
 
         <h2 id="additional-resources">Additional Resources</h2>
         <ul>
