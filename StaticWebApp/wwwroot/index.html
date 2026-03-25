@@ -53,8 +53,8 @@
         }
 
         .content {
-            margin-left: 270px;
-            padding: 40px 32px 32px 32px;
+            margin-left: 260px;
+            padding: 40px 16px 32px 16px;
             max-width: 900px;
             box-sizing: border-box;
         }
@@ -78,7 +78,7 @@
 
         pre {
             background: #232946;
-            color: #aaa4a5;
+            color: #fff;
             padding: 12px;
             border-radius: 7px;
             font-size: 1em;
@@ -158,17 +158,35 @@
         const sidebar = document.getElementById('sidebarNav');
         if (!sidebar) return;
         const links = sidebar.querySelectorAll('a');
+        const sectionIds = Array.from(links).map(link => link.getAttribute('href'));
+        const sections = sectionIds.map(id => document.querySelector(id));
+
         function activateLink() {
             let found = false;
-            links.forEach(link => {
+            const scrollPos = window.scrollY + 100;
+            links.forEach((link, i) => {
                 link.classList.remove('active');
-                const section = document.querySelector(link.getAttribute('href'));
-                if (section && !found && window.scrollY + 80 >= section.offsetTop) {
+                const section = sections[i];
+                if (section && !found && scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
                     link.classList.add('active');
                     found = true;
                 }
             });
         }
+
+        // Click: scroll to section and highlight only that link
+        links.forEach((link, i) => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = sections[i];
+                if (section) {
+                    window.scrollTo({ top: section.offsetTop - 20, behavior: 'smooth' });
+                }
+                links.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+            });
+        });
+
         window.addEventListener('scroll', activateLink);
         activateLink();
     });
