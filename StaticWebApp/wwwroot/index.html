@@ -122,8 +122,56 @@
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
+        <h4>Parameters</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>query</td><td>string</td><td>Yes</td><td>SuiteQL query string to execute.</td></tr>
+            <tr><td>nextPageLink</td><td>string</td><td>No</td><td>Optional. If paginating, pass the <code>nextPageLink</code> value from a previous response to retrieve the next page of results.</td></tr>
+        </table>
+
+        <h4>Notes</h4>
+        <ul>
+            <li>Query must be valid SuiteQL syntax.</li>
+            <li>Authentication header <code>x-functions-key</code> is required.</li>
+            <li>If the result set exceeds 1000 records, the response will include a <code>links</code> array with objects containing <code>rel</code> (such as <code>next</code>, <code>last</code>, <code>self</code>) and <code>href</code> properties. While <code>hasMore</code> is <code>true</code>, pass the <code>href</code> value from the <code>rel: next</code> object as <code>nextPageLink</code> in your next request payload to fetch subsequent pages.</li>
+        </ul>
+
         <div class="example">
             <h4>Ex 1: Query Customer Details</h4>
+                        <h4>Ex 1b: Paginated Query (Next Page)</h4>
+                        <p><strong>Payload:</strong></p>
+                        <pre>
+            {
+                "nextPageLink": "https://11244339.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=1000",
+                "query": "select id, entity, trandate from transaction where type = 'SalesOrd'"
+            }
+                        </pre>
+                        <p><strong>Success Response (Paginated):</strong></p>
+                        <pre>
+            {
+                "links": [
+                    {
+                        "rel": "next",
+                        "href": "https://11244339.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=2000"
+                    },
+                    {
+                        "rel": "last",
+                        "href": "https://11244339.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0"
+                    },
+                    {
+                        "rel": "self",
+                        "href": "https://11244339.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql",
+                        "method": "POST"
+                    }
+                ],
+                "count": 1000,
+                "hasMore": true,
+                "items": [
+                    { "id": "1001", "entity": "7", "trandate": "2/10/2025" },
+                    ...
+                ]
+            }
+                        </pre>
             <p><strong>Method:</strong> POST</p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteSuiteqlQuery</code>
@@ -202,6 +250,99 @@
     "totalResults": 1
 }
             </pre>
+            <h4>Ex 2: Invalid Query Example (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "query": "select * from non_existing_table"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        {
+            "detail": "Invalid search query. Table does not exist.",
+            "o:errorQueryParam": "q",
+            "o:errorCode": "INVALID_PARAMETER"
+        }
+    ]
+}
+            </pre>
+            <h4>Ex 3: Advanced Query (Join)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "query": "select t.id, t.trandate, c.entityid from transaction t join customer c on t.entity = c.id where t.type = 'SalesOrd' and c.email like '%@example.com'"
+}
+            </pre>
+            <p><strong>Success Response:</strong> (truncated)</p>
+            <pre>
+{
+    "items": [
+        { "id": "1002", "trandate": "2/11/2025", "entityid": "New Customer" },
+        ...
+    ],
+    "count": 2,
+    "hasMore": false
+}
+            </pre>
+            <h4>Ex 4: Empty Result Set</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "query": "select * from transaction where id = -1"
+}
+            </pre>
+            <p><strong>Success Response:</strong></p>
+            <pre>
+{
+    "items": [],
+    "count": 0,
+    "hasMore": false
+}
+            </pre>
+            <h4>Ex 5: Paginated Multi-Page Query</h4>
+            <p><strong>Payload (Page 1):</strong></p>
+            <pre>
+{
+    "query": "select id from transaction"
+}
+            </pre>
+            <p><strong>Success Response (Page 1):</strong></p>
+            <pre>
+{
+    "links": [
+        { "rel": "next", "href": "https://.../suiteql?limit=1000&offset=1000" }
+    ],
+    "count": 1000,
+    "hasMore": true,
+    "items": [ ... ]
+}
+            </pre>
+            <p><strong>Payload (Page 2):</strong></p>
+            <pre>
+{
+    "nextPageLink": "https://.../suiteql?limit=1000&offset=1000",
+    "query": "select id from transaction"
+}
+            </pre>
+            <p><strong>Success Response (Page 2):</strong></p>
+            <pre>
+{
+    "links": [ ... ],
+    "count": 1000,
+    "hasMore": true,
+    "items": [ ... ]
+}
+            </pre>
+    "offset": 0,
+    "totalResults": 1
+}
+            </pre>
             <p><strong>Error Response:</strong></p>
             <pre>
     {
@@ -226,6 +367,14 @@
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
+        <h4>Parameters</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record (e.g., customer, inventoryItem).</td></tr>
+            <tr><td>recordId</td><td>string</td><td>Yes</td><td>Internal or external ID of the record to update.</td></tr>
+            <tr><td>requestBody</td><td>object</td><td>Yes</td><td>Fields to update in the record.</td></tr>
+        </table>
+
 
 
         <div class="example">
@@ -248,6 +397,29 @@
         }
     }
                 </pre>
+            <h4>Ex 2: Invalid Record ID (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "recordId": "invalid_id",
+    "requestBody": { "phone": "555-555-5555" }
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+    "title": "Not Found",
+    "status": 404,
+    "o:errorDetails": [
+        {
+            "detail": "The record instance does not exist. Provide a valid record instance ID.",
+            "o:errorCode": "NONEXISTENT_ID"
+        }
+    ]
+}
+            </pre>
         </div>
 
         <div class="example">
@@ -280,6 +452,13 @@
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
+        <h4>Parameters</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record to create.</td></tr>
+            <tr><td>requestBody</td><td>object</td><td>Yes</td><td>Fields for the new record.</td></tr>
+        </table>
+
         <div class="example">
             <h4>Ex 1: Create Customer Record</h4>
             <p><strong>Method:</strong> POST</p>
@@ -301,6 +480,101 @@
         }
     }
                 </pre>
+            <h4>Ex 2: Missing Required Field (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "requestBody": {
+        "companyname": "My Company"
+    }
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        {
+            "detail": "Missing required field: entityid.",
+            "o:errorCode": "USER_ERROR"
+        }
+    ]
+}
+            </pre>
+                <h4>Ex 3: All Optional Fields</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "requestBody": {
+            "entityid": "Optional Customer",
+            "companyname": "Optional Co",
+            "subsidiary": 1,
+            "email": "optional@example.com",
+            "phone": "555-555-5555",
+            "custentity_mb_cust_class": 6,
+            "comments": "All optional fields included"
+        }
+    }
+                </pre>
+                <p><strong>Success Response:</strong> (truncated)</p>
+                <pre>
+    {
+        "recordId": "7000",
+        "status": "created"
+    }
+                </pre>
+                <h4>Ex 4: Duplicate Record (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "requestBody": {
+            "entityid": "New Customer",
+            "companyname": "My Company",
+            "subsidiary": 1,
+            "email": "newcustomer@example.com",
+            "phone": "123-456-7890",
+            "custentity_mb_cust_class": 6
+        }
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "o:errorDetails": [
+            { "detail": "Duplicate record detected.", "o:errorCode": "DUPLICATE_RECORD" }
+        ]
+    }
+                </pre>
+                <h4>Ex 5: Invalid Data Type (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "requestBody": {
+            "entityid": 12345,
+            "companyname": "My Company"
+        }
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "o:errorDetails": [
+            { "detail": "Invalid data type for field: entityid", "o:errorCode": "INVALID_PARAMETER" }
+        ]
+    }
+                </pre>
         </div>
 
 
@@ -309,6 +583,14 @@
             <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code>
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
+
+        <h4>Parameters</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record to retrieve.</td></tr>
+            <tr><td>recordId</td><td>string</td><td>Yes</td><td>Internal or external ID of the record.</td></tr>
+            <tr><td>extension</td><td>string</td><td>No</td><td>Optional query string for additional fields or filters.</td></tr>
+        </table>
 
         <div class="example">
             <h4>Ex 1: Get Customer Record by Internal ID</h4>
@@ -355,6 +637,28 @@
         "unsubscribe": true
     }
     </pre>
+            <h4>Ex 2: Invalid Record Type (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "nonexistentType",
+    "recordId": "1234"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        {
+            "detail": "Invalid record type.",
+            "o:errorCode": "INVALID_PARAMETER"
+        }
+    ]
+}
+            </pre>
             <p><strong>Failure Response:</strong></p>
             <pre>
    {
@@ -419,6 +723,49 @@
 }
     </pre>
         </div>
+            <div class="example">
+                <h4>Ex 4: Non-existent External ID (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "recordId": "eid:DoesNotExist",
+        "extension": ""
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+        "title": "Not Found",
+        "status": 404,
+        "o:errorDetails": [
+            { "detail": "The record instance does not exist. Provide a valid record instance ID.", "o:errorCode": "NONEXISTENT_ID" }
+        ]
+    }
+                </pre>
+            </div>
+            <div class="example">
+                <h4>Ex 5: Permission Error (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "recordId": "6991",
+        "extension": ""
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3",
+        "title": "Forbidden",
+        "status": 403,
+        "o:errorDetails": [
+            { "detail": "You do not have permission to view this record.", "o:errorCode": "PERMISSION_DENIED" }
+        ]
+    }
+                </pre>
 
 
 
@@ -428,6 +775,15 @@
             <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteTransformRequest</code>
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
+
+        <h4>Parameters</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>fromRecordType</td><td>string</td><td>Yes</td><td>Source record type (e.g., salesOrder).</td></tr>
+            <tr><td>fromId</td><td>string</td><td>Yes</td><td>Source record ID.</td></tr>
+            <tr><td>toRecordType</td><td>string</td><td>Yes</td><td>Target record type (e.g., itemFulfillment).</td></tr>
+            <tr><td>requestBody</td><td>object</td><td>No</td><td>Optional fields for the transformation.</td></tr>
+        </table>
 
         <div class="example">
             <h4>Ex 1: Sales Order to Item Fulfillment</h4>
@@ -456,6 +812,77 @@
         }
     }
     </pre>
+                <h4>Ex 2: Missing Required Transformation Field (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "fromRecordType": "salesOrder",
+        "fromId": "1080",
+        "toRecordType": "itemFulfillment"
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "o:errorDetails": [
+            { "detail": "Missing required transformation field: requestBody.item", "o:errorCode": "USER_ERROR" }
+        ]
+    }
+                </pre>
+                <h4>Ex 3: Multi-line Transformation</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "fromRecordType": "salesOrder",
+        "fromId": "1080",
+        "toRecordType": "itemFulfillment",
+        "requestBody": {
+            "memo": "multi-line",
+            "item": {
+                "items": [
+                    { "orderLine": 1, "quantity": 2, "itemReceive": true },
+                    { "orderLine": 2, "quantity": 1, "itemReceive": true }
+                ]
+            }
+        }
+    }
+                </pre>
+                <p><strong>Success Response:</strong> (truncated)</p>
+                <pre>
+    {
+        "title": "Success",
+        "status": 200,
+        "message": "The Transform operation was completed successfully.",
+        "internalid": "980",
+        "from_internalId": "1080"
+    }
+                </pre>
+            <h4>Ex 2: Invalid Transformation (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "fromRecordType": "salesOrder",
+    "fromId": "9999",
+    "toRecordType": "itemFulfillment"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        {
+            "detail": "No valid line items for transformation.",
+            "o:errorCode": "USER_ERROR"
+        }
+    ]
+}
+            </pre>
             <p><strong>Success Response:</strong></p>
             <pre>
     {
@@ -502,6 +929,13 @@
         </p>
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
+        <h4>Parameters</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record to delete.</td></tr>
+            <tr><td>recordId</td><td>string</td><td>Yes</td><td>Internal or external ID of the record.</td></tr>
+        </table>
+
         <div class="example">
             <h4>Ex 1: Delete Customer Record</h4>
             <p><strong>Method:</strong> DELETE</p>
@@ -516,6 +950,66 @@
         "recordId": "6993"
     }
                 </pre>
+                <h4>Ex 2: Already Deleted Record (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "recordId": "6993"
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+        "title": "Not Found",
+        "status": 404,
+        "o:errorDetails": [
+            { "detail": "The record instance does not exist. Provide a valid record instance ID.", "o:errorCode": "NONEXISTENT_ID" }
+        ]
+    }
+                </pre>
+                <h4>Ex 3: Permission Error (Error)</h4>
+                <p><strong>Payload:</strong></p>
+                <pre>
+    {
+        "recordType": "customer",
+        "recordId": "6991"
+    }
+                </pre>
+                <p><strong>Error Response:</strong></p>
+                <pre>
+    {
+        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3",
+        "title": "Forbidden",
+        "status": 403,
+        "o:errorDetails": [
+            { "detail": "You do not have permission to delete this record.", "o:errorCode": "PERMISSION_DENIED" }
+        ]
+    }
+                </pre>
+            <h4>Ex 2: Nonexistent Record (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "recordId": "doesnotexist"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+    "title": "Not Found",
+    "status": 404,
+    "o:errorDetails": [
+        {
+            "detail": "The record instance does not exist. Provide a valid record instance ID.",
+            "o:errorCode": "NONEXISTENT_ID"
+        }
+    ]
+}
+            </pre>
         </div>
 
         <h2 id="error-handling">Error Handling</h2>
@@ -525,6 +1019,15 @@
         <p>Queries or Post Requests that do not contain valid JSON will result in a <strong>500</strong> error code response. Ensure all objects are properly wrapped and formatted before proceeding.</p>
         <p><strong>SuiteQL & REST Requests</strong></p>
         <p>All NetSuite error messages are returned from the server upon a failed API call, along with a <strong>400</strong> error code response. The format of the messages is inherited from the NetSuite server and typically resembles the below message.</p>
+        <h4>Common Error Codes</h4>
+        <table border="1" cellpadding="4" cellspacing="0">
+            <tr><th>Status Code</th><th>Error Code</th><th>Description</th></tr>
+            <tr><td>400</td><td>INVALID_PARAMETER</td><td>Invalid input or parameter value.</td></tr>
+            <tr><td>400</td><td>USER_ERROR</td><td>Business logic or validation error.</td></tr>
+            <tr><td>404</td><td>NONEXISTENT_ID</td><td>Record not found.</td></tr>
+            <tr><td>401</td><td>UNAUTHORIZED</td><td>Missing or invalid authentication key.</td></tr>
+            <tr><td>500</td><td>INTERNAL_SERVER_ERROR</td><td>Malformed request or server error.</td></tr>
+        </table>
 <div class="example">
             <pre>
 {
