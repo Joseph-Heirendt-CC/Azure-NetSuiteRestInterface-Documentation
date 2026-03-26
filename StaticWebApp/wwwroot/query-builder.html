@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SuiteQL Query Builder — visually construct multi-table SuiteQL queries for NetSuite.">
+    <title>SuiteQL Query Builder — Azure NetSuite REST Interface</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background: linear-gradient(120deg, #f8fafc 0%, #e3e9f7 100%);
+            min-height: 100vh;
+            color: #111;
+        }
+
+        /* ── Top Bar ── */
+        .topbar {
+            background: #232946;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 24px;
+            height: 52px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 2px solid #aaa4a5;
+        }
+        .topbar h1 {
+            font-size: 1.15em;
+            margin: 0;
+            font-weight: 600;
+            color: #fff;
+            flex: 1;
+        }
+        .topbar a {
+            color: #aaa4a5;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+        .topbar a:hover { color: #fff; }
+
+        /* ── Main Layout ── */
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 52px);
+        }
+
+        /* ── Schema Browser (left) ── */
+        .schema-panel {
+            background: #232946;
+            color: #fff;
+            padding: 16px 0;
+            overflow-y: auto;
+            max-height: calc(100vh - 52px);
+            position: sticky;
+            top: 52px;
+        }
+        .schema-panel-header {
+            padding: 0 14px 10px 14px;
+            border-bottom: 1px solid #3d4f7c;
+            margin-bottom: 8px;
+        }
+        .schema-panel-header h2 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #aaa4a5;
+            margin: 0 0 8px 0;
+            border: none;
+            padding: 0;
+        }
+        .schema-search {
+            width: 100%;
+            background: #1a2038;
+            border: 1px solid #3d4f7c;
+            border-radius: 4px;
+            color: #fff;
+            padding: 5px 8px;
+            font-size: 0.82em;
+        }
+        .schema-search::placeholder { color: #666; }
+        .schema-table-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 0.83em;
+            border-left: 3px solid transparent;
+            transition: background 0.15s;
+        }
+        .schema-table-item:hover { background: #2d3a5c; }
+        .schema-table-item.selected {
+            background: #2d3a5c;
+            border-left-color: #aaa4a5;
+        }
+        .schema-table-name { color: #c8d0e8; font-weight: 500; }
+        .schema-load-btn {
+            background: none;
+            border: 1px solid #3d4f7c;
+            color: #aaa4a5;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-size: 0.72em;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .schema-load-btn:hover { background: #3d4f7c; color: #fff; }
+
+        /* ── Builder Area (right) ── */
+        .builder-area {
+            padding: 20px 24px 40px 24px;
+            overflow-y: auto;
+        }
+
+        /* ── Connection Panel ── */
+        .conn-panel {
+            background: #fff;
+            border: 1px solid #d0d7e8;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+        .conn-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: #f4f6fb;
+            border-bottom: 1px solid #d0d7e8;
+            cursor: pointer;
+            user-select: none;
+        }
+        .conn-panel-header h3 {
+            margin: 0;
+            font-size: 0.88em;
+            color: #232946;
+        }
+        .conn-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        .conn-status.ok { color: #2d6a4f; }
+        .conn-status.err { color: #721c24; }
+        .conn-status.idle { color: #666; }
+        .conn-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .conn-body {
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+        .conn-body.hidden { display: none; }
+        .field-group label {
+            display: block;
+            font-size: 0.78em;
+            color: #555;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+        .field-group input {
+            width: 100%;
+            border: 1px solid #aaa4a5;
+            border-radius: 4px;
+            padding: 6px 9px;
+            font-size: 0.85em;
+            font-family: monospace;
+        }
+
+        /* ── Section Card ── */
+        .section-card {
+            background: #fff;
+            border: 1px solid #d0d7e8;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+        .section-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 16px;
+            background: #f4f6fb;
+            border-bottom: 1px solid #d0d7e8;
+        }
+        .section-card-header h3 {
+            margin: 0;
+            font-size: 0.9em;
+            color: #232946;
+            font-weight: 700;
+        }
+        .section-card-body { padding: 14px 16px; }
+
+        /* ── Base Table Selector ── */
+        .base-table-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .base-table-row label { font-size: 0.82em; color: #555; font-weight: 600; white-space: nowrap; }
+        select.table-select {
+            border: 1px solid #aaa4a5;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 0.85em;
+            min-width: 180px;
+        }
+
+        /* ── Column Picker ── */
+        .col-search {
+            width: 100%;
+            border: 1px solid #aaa4a5;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 0.82em;
+            margin-bottom: 8px;
+        }
+        .col-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 3px 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e0e4f0;
+            border-radius: 4px;
+            padding: 8px;
+            background: #fafbfd;
+        }
+        .col-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8em;
+            padding: 2px 0;
+            cursor: pointer;
+        }
+        .col-item input[type=checkbox] { margin: 0; cursor: pointer; }
+        .col-item-name { color: #232946; }
+        .col-item-type { color: #888; font-size: 0.85em; }
+        .col-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* ── JOIN Builder ── */
+        .join-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 24px 1fr 80px auto;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+            background: #f4f6fb;
+            padding: 8px 10px;
+            border-radius: 5px;
+            border: 1px solid #d0d7e8;
+            font-size: 0.82em;
+        }
+        .join-row select, .join-row input {
+            border: 1px solid #aaa4a5;
+            border-radius: 3px;
+            padding: 4px 6px;
+            font-size: 0.85em;
+            width: 100%;
+        }
+        .join-eq { text-align: center; color: #888; font-weight: 700; }
+
+        /* ── WHERE Builder ── */
+        .where-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 100px 1fr auto;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 8px;
+            background: #f4f6fb;
+            padding: 7px 10px;
+            border-radius: 5px;
+            border: 1px solid #d0d7e8;
+            font-size: 0.82em;
+        }
+        .where-row select, .where-row input {
+            border: 1px solid #aaa4a5;
+            border-radius: 3px;
+            padding: 4px 6px;
+            font-size: 0.85em;
+            width: 100%;
+        }
+        .where-andor {
+            font-size: 0.75em;
+            font-weight: 700;
+            color: #232946;
+            cursor: pointer;
+            background: #e3e9f7;
+            border: 1px solid #aaa4a5;
+            border-radius: 3px;
+            padding: 3px 6px;
+        }
+        .where-andor:hover { background: #aaa4a5; color: #fff; }
+
+        /* ── ORDER / LIMIT Row ── */
+        .order-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .order-row select, .order-row input {
+            border: 1px solid #aaa4a5;
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: 0.85em;
+        }
+        .order-row label { font-size: 0.82em; color: #555; font-weight: 600; }
+
+        /* ── Query Preview ── */
+        .preview-wrap { position: relative; }
+        .query-pre {
+            background: #232946;
+            color: #c8e6c9;
+            padding: 14px 16px;
+            border-radius: 7px;
+            font-size: 0.88em;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 60px;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            margin: 0;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px; right: 8px;
+            background: #3d4f7c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 0.78em;
+            cursor: pointer;
+            opacity: 0.85;
+        }
+        .copy-btn:hover { opacity: 1; }
+
+        /* ── Results ── */
+        .results-wrap {
+            background: #fff;
+            border: 1px solid #d0d7e8;
+            border-radius: 8px;
+            margin-top: 14px;
+            overflow: hidden;
+        }
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 9px 16px;
+            background: #f4f6fb;
+            border-bottom: 1px solid #d0d7e8;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #232946;
+        }
+        .results-table-wrap {
+            overflow-x: auto;
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82em;
+        }
+        .results-table th {
+            background: #aaa4a5;
+            color: #232946;
+            padding: 6px 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+        .results-table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #e8ecf4;
+            white-space: nowrap;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .results-table tr:nth-child(even) td { background: #f8fafc; }
+
+        /* ── Buttons ── */
+        .btn {
+            border: none;
+            border-radius: 5px;
+            padding: 7px 16px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: #232946; color: #fff; }
+        .btn-accent  { background: #aaa4a5; color: #232946; }
+        .btn-sm { padding: 4px 10px; font-size: 0.78em; }
+        .btn-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .btn-ghost {
+            background: none;
+            border: 1px solid #aaa4a5;
+            color: #232946;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+        .btn-ghost:hover { background: #f4f6fb; }
+
+        .exec-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+        }
+        .spin { animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .msg { font-size: 0.82em; padding: 8px 12px; border-radius: 5px; margin-top: 8px; }
+        .msg-err { background: #f8d7da; color: #721c24; }
+        .msg-ok  { background: #d4edda; color: #155724; }
+
+        /* ── Mobile ── */
+        @media (max-width: 820px) {
+            .layout { grid-template-columns: 1fr; }
+            .schema-panel { position: static; max-height: 220px; }
+            .builder-area { padding: 14px 12px 32px 12px; }
+            .conn-body { grid-template-columns: 1fr; }
+            .join-row { grid-template-columns: 80px 1fr auto; }
+            .join-row .join-eq { display: none; }
+            .where-row { grid-template-columns: 1fr 80px 1fr auto; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <h1>&#9875; SuiteQL Query Builder</h1>
+    <a href="/index.html">&larr; Back to API Docs</a>
+</div>
+
+<div class="layout">
+
+    <!-- ── Schema Browser ── -->
+    <div class="schema-panel">
+        <div class="schema-panel-header">
+            <h2>Tables</h2>
+            <input class="schema-search" id="schemaSearch" type="text" placeholder="Search tables…">
+        </div>
+        <div id="schemaTableList"></div>
+    </div>
+
+    <!-- ── Builder ── -->
+    <div class="builder-area">
+
+        <!-- Connection -->
+        <div class="conn-panel">
+            <div class="conn-panel-header" id="connToggle">
+                <h3>&#128274; Connection Settings</h3>
+                <span class="conn-status idle" id="connStatus">
+                    <span class="conn-dot"></span> Not connected
+                </span>
+            </div>
+            <div class="conn-body" id="connBody">
+                <div class="field-group">
+                    <label>Company Name</label>
+                    <input type="text" id="companyName" placeholder="acmecorp" autocomplete="off">
+                </div>
+                <div class="field-group">
+                    <label>x-functions-key</label>
+                    <input type="password" id="functionsKey" placeholder="API key" autocomplete="off">
+                </div>
+                <button class="btn btn-accent btn-sm" id="testConnBtn" onclick="testConnection()">Test Connection</button>
+            </div>
+        </div>
+
+        <!-- SELECT -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <h3>SELECT</h3>
+            </div>
+            <div class="section-card-body">
+                <div class="base-table-row">
+                    <label>Base table:</label>
+                    <select class="table-select" id="baseTableSelect" onchange="onBaseTableChange()">
+                        <option value="">— choose a table —</option>
+                    </select>
+                    <button class="btn-ghost btn-sm" onclick="loadColumnsFromNS(currentBaseTable)" title="Fetch columns from NetSuite">&#8635; Refresh</button>
+                </div>
+                <input class="col-search" id="colSearch" type="text" placeholder="Filter columns…" oninput="renderColumns()">
+                <div class="col-grid" id="colGrid"></div>
+                <div class="col-actions">
+                    <button class="btn-ghost btn-sm" onclick="selectAllCols(true)">Select All</button>
+                    <button class="btn-ghost btn-sm" onclick="selectAllCols(false)">Deselect All</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- JOINs -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <h3>JOINs</h3>
+                <button class="btn btn-sm btn-accent" onclick="addJoin()">+ Add JOIN</button>
+            </div>
+            <div class="section-card-body" id="joinRows">
+                <p style="color:#888;font-size:0.82em;margin:0;">No joins yet. Select a base table first.</p>
+            </div>
+        </div>
+
+        <!-- WHERE -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <h3>WHERE</h3>
+                <button class="btn btn-sm btn-accent" onclick="addWhere()">+ Add Condition</button>
+            </div>
+            <div class="section-card-body" id="whereRows">
+                <p style="color:#888;font-size:0.82em;margin:0;">No conditions yet.</p>
+            </div>
+        </div>
+
+        <!-- ORDER BY / LIMIT -->
+        <div class="section-card">
+            <div class="section-card-header"><h3>ORDER BY / LIMIT</h3></div>
+            <div class="section-card-body">
+                <div class="order-row">
+                    <label>Order by:</label>
+                    <select id="orderByCol" onchange="buildQuery()">
+                        <option value="">— none —</option>
+                    </select>
+                    <select id="orderDir" onchange="buildQuery()">
+                        <option value="ASC">ASC</option>
+                        <option value="DESC">DESC</option>
+                    </select>
+                    <label style="margin-left:16px;">Limit:</label>
+                    <input type="number" id="limitVal" value="100" min="1" max="1000" style="width:80px;" oninput="buildQuery()">
+                    <label>Offset:</label>
+                    <input type="number" id="offsetVal" value="0" min="0" style="width:80px;" oninput="buildQuery()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Query Preview -->
+        <div class="section-card">
+            <div class="section-card-header"><h3>Generated SuiteQL</h3></div>
+            <div class="section-card-body">
+                <div class="preview-wrap">
+                    <pre class="query-pre" id="queryPreview">-- Select a base table to begin.</pre>
+                    <button class="copy-btn" onclick="copyQuery()">Copy</button>
+                </div>
+                <div class="exec-row">
+                    <button class="btn btn-primary" id="execBtn" onclick="executeQuery()">&#9654; Execute</button>
+                    <span id="execMsg"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results-wrap" id="resultsWrap" style="display:none;">
+            <div class="results-header">
+                <span id="resultsLabel">Results</span>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn-ghost btn-sm" id="nextPageBtn" onclick="loadNextPage()" style="display:none;">Load Next Page</button>
+                    <button class="btn-ghost btn-sm" onclick="exportCsv()">Export CSV</button>
+                </div>
+            </div>
+            <div class="results-table-wrap">
+                <table class="results-table" id="resultsTable"></table>
+            </div>
+        </div>
+
+    </div><!-- /builder-area -->
+</div><!-- /layout -->
+
+<script>
+// ════════════════════════════════════════════════
+//  BUNDLED SCHEMA
+// ════════════════════════════════════════════════
+const SCHEMA = {
+    transaction: {
+        label: 'transaction',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'type',type:'string'},{name:'entity',type:'integer'},{name:'subsidiary',type:'integer'},
+            {name:'currency',type:'integer'},{name:'exchangerate',type:'float'},{name:'amount',type:'float'},
+            {name:'netamount',type:'float'},{name:'taxamount',type:'float'},{name:'status',type:'string'},
+            {name:'memo',type:'string'},{name:'postingperiod',type:'integer'},{name:'createddate',type:'date'},
+            {name:'lastmodifieddate',type:'date'},{name:'salesrep',type:'integer'},{name:'location',type:'integer'},
+            {name:'department',type:'integer'},{name:'class',type:'integer'},{name:'terms',type:'integer'},
+            {name:'duedate',type:'date'},{name:'closedate',type:'date'},{name:'shipdate',type:'date'},
+            {name:'ordpicked',type:'boolean'},{name:'isfulfilled',type:'boolean'},{name:'custbody_source',type:'string'}
+        ],
+        joins: [{table:'customer',left:'entity',right:'id'},{table:'employee',left:'salesrep',right:'id'}]
+    },
+    transactionline: {
+        label: 'transactionline',
+        columns: [
+            {name:'id',type:'integer'},{name:'transaction',type:'integer'},{name:'linesequencenumber',type:'integer'},
+            {name:'item',type:'integer'},{name:'quantity',type:'float'},{name:'rate',type:'float'},
+            {name:'amount',type:'float'},{name:'taxamount',type:'float'},{name:'netamount',type:'float'},
+            {name:'memo',type:'string'},{name:'location',type:'integer'},{name:'department',type:'integer'},
+            {name:'class',type:'integer'},{name:'subsidiary',type:'integer'},{name:'taxcode',type:'integer'},
+            {name:'istaxable',type:'boolean'},{name:'commitmentfirm',type:'boolean'},{name:'cleared',type:'boolean'},
+            {name:'mainline',type:'boolean'},{name:'taxline',type:'boolean'}
+        ],
+        joins: [{table:'transaction',left:'transaction',right:'id'},{table:'item',left:'item',right:'id'}]
+    },
+    customer: {
+        label: 'customer',
+        columns: [
+            {name:'id',type:'integer'},{name:'entityid',type:'string'},{name:'companyname',type:'string'},
+            {name:'email',type:'string'},{name:'phone',type:'string'},{name:'altphone',type:'string'},
+            {name:'fax',type:'string'},{name:'website',type:'string'},{name:'subsidiary',type:'integer'},
+            {name:'salesrep',type:'integer'},{name:'terms',type:'integer'},{name:'currency',type:'integer'},
+            {name:'creditlimit',type:'float'},{name:'balance',type:'float'},{name:'overduebalance',type:'float'},
+            {name:'aging',type:'float'},{name:'isinactive',type:'boolean'},{name:'isperson',type:'boolean'},
+            {name:'category',type:'integer'},{name:'taxitem',type:'integer'},{name:'vatregnumber',type:'string'},
+            {name:'comments',type:'string'},{name:'datecreated',type:'date'},{name:'lastmodifieddate',type:'date'}
+        ],
+        joins: [{table:'employee',left:'salesrep',right:'id'},{table:'subsidiary',left:'subsidiary',right:'id'}]
+    },
+    contact: {
+        label: 'contact',
+        columns: [
+            {name:'id',type:'integer'},{name:'entityid',type:'string'},{name:'firstname',type:'string'},
+            {name:'lastname',type:'string'},{name:'email',type:'string'},{name:'phone',type:'string'},
+            {name:'company',type:'integer'},{name:'subsidiary',type:'integer'},{name:'title',type:'string'},
+            {name:'isinactive',type:'boolean'},{name:'datecreated',type:'date'},{name:'lastmodifieddate',type:'date'}
+        ],
+        joins: [{table:'customer',left:'company',right:'id'}]
+    },
+    item: {
+        label: 'item',
+        columns: [
+            {name:'id',type:'integer'},{name:'itemid',type:'string'},{name:'displayname',type:'string'},
+            {name:'description',type:'string'},{name:'type',type:'string'},{name:'subtype',type:'string'},
+            {name:'upccode',type:'string'},{name:'cost',type:'float'},{name:'salesprice',type:'float'},
+            {name:'quantityonhand',type:'float'},{name:'subsidiary',type:'integer'},{name:'department',type:'integer'},
+            {name:'class',type:'integer'},{name:'location',type:'integer'},{name:'vendor',type:'integer'},
+            {name:'isinactive',type:'boolean'},{name:'istaxable',type:'boolean'},{name:'incomeaccount',type:'integer'},
+            {name:'expenseaccount',type:'integer'},{name:'assetaccount',type:'integer'}
+        ],
+        joins: []
+    },
+    inventoryitem: {
+        label: 'inventoryitem',
+        columns: [
+            {name:'id',type:'integer'},{name:'itemid',type:'string'},{name:'displayname',type:'string'},
+            {name:'description',type:'string'},{name:'cost',type:'float'},{name:'salesprice',type:'float'},
+            {name:'quantityonhand',type:'float'},{name:'quantityavailable',type:'float'},
+            {name:'quantityonorder',type:'float'},{name:'reordermultiple',type:'float'},
+            {name:'subsidiary',type:'integer'},{name:'location',type:'integer'},{name:'vendor',type:'integer'},
+            {name:'upccode',type:'string'},{name:'usebins',type:'boolean'},{name:'isinactive',type:'boolean'}
+        ],
+        joins: []
+    },
+    employee: {
+        label: 'employee',
+        columns: [
+            {name:'id',type:'integer'},{name:'entityid',type:'string'},{name:'firstname',type:'string'},
+            {name:'lastname',type:'string'},{name:'email',type:'string'},{name:'phone',type:'string'},
+            {name:'subsidiary',type:'integer'},{name:'department',type:'integer'},{name:'class',type:'integer'},
+            {name:'location',type:'integer'},{name:'supervisor',type:'integer'},{name:'hiredate',type:'date'},
+            {name:'releasedate',type:'date'},{name:'isinactive',type:'boolean'},{name:'issalesrep',type:'boolean'},
+            {name:'title',type:'string'},{name:'employeetype',type:'integer'}
+        ],
+        joins: [{table:'department',left:'department',right:'id'},{table:'subsidiary',left:'subsidiary',right:'id'}]
+    },
+    vendor: {
+        label: 'vendor',
+        columns: [
+            {name:'id',type:'integer'},{name:'entityid',type:'string'},{name:'companyname',type:'string'},
+            {name:'email',type:'string'},{name:'phone',type:'string'},{name:'subsidiary',type:'integer'},
+            {name:'currency',type:'integer'},{name:'terms',type:'integer'},{name:'balance',type:'float'},
+            {name:'creditlimit',type:'float'},{name:'vatregnumber',type:'string'},{name:'isinactive',type:'boolean'},
+            {name:'is1099eligible',type:'boolean'},{name:'comments',type:'string'},{name:'datecreated',type:'date'}
+        ],
+        joins: [{table:'subsidiary',left:'subsidiary',right:'id'}]
+    },
+    vendorbill: {
+        label: 'vendorbill',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'duedate',type:'date'},{name:'amount',type:'float'},
+            {name:'status',type:'string'},{name:'memo',type:'string'},{name:'subsidiary',type:'integer'},
+            {name:'currency',type:'integer'},{name:'postingperiod',type:'integer'},{name:'approvalstatus',type:'integer'}
+        ],
+        joins: [{table:'vendor',left:'entity',right:'id'}]
+    },
+    purchaseorder: {
+        label: 'purchaseorder',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'duedate',type:'date'},{name:'amount',type:'float'},
+            {name:'status',type:'string'},{name:'memo',type:'string'},{name:'subsidiary',type:'integer'},
+            {name:'currency',type:'integer'},{name:'shipdate',type:'date'},{name:'location',type:'integer'}
+        ],
+        joins: [{table:'vendor',left:'entity',right:'id'}]
+    },
+    invoice: {
+        label: 'invoice',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'duedate',type:'date'},{name:'amount',type:'float'},
+            {name:'amountremaining',type:'float'},{name:'status',type:'string'},{name:'memo',type:'string'},
+            {name:'subsidiary',type:'integer'},{name:'currency',type:'integer'},{name:'postingperiod',type:'integer'},
+            {name:'salesrep',type:'integer'},{name:'terms',type:'integer'}
+        ],
+        joins: [{table:'customer',left:'entity',right:'id'}]
+    },
+    itemfulfillment: {
+        label: 'itemfulfillment',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'status',type:'string'},{name:'memo',type:'string'},
+            {name:'shipdate',type:'date'},{name:'subsidiary',type:'integer'},{name:'location',type:'integer'},
+            {name:'shipcarrier',type:'string'},{name:'trackingnumbers',type:'string'}
+        ],
+        joins: [{table:'transaction',left:'id',right:'id'}]
+    },
+    itemreceipt: {
+        label: 'itemreceipt',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'status',type:'string'},{name:'memo',type:'string'},
+            {name:'subsidiary',type:'integer'},{name:'location',type:'integer'}
+        ],
+        joins: [{table:'transaction',left:'id',right:'id'}]
+    },
+    department: {
+        label: 'department',
+        columns: [
+            {name:'id',type:'integer'},{name:'name',type:'string'},{name:'fullname',type:'string'},
+            {name:'parent',type:'integer'},{name:'subsidiary',type:'integer'},{name:'isinactive',type:'boolean'}
+        ],
+        joins: []
+    },
+    subsidiary: {
+        label: 'subsidiary',
+        columns: [
+            {name:'id',type:'integer'},{name:'name',type:'string'},{name:'fullname',type:'string'},
+            {name:'currency',type:'integer'},{name:'parent',type:'integer'},{name:'isinactive',type:'boolean'},
+            {name:'country',type:'string'},{name:'email',type:'string'}
+        ],
+        joins: []
+    },
+    location: {
+        label: 'location',
+        columns: [
+            {name:'id',type:'integer'},{name:'name',type:'string'},{name:'fullname',type:'string'},
+            {name:'parent',type:'integer'},{name:'subsidiary',type:'integer'},{name:'isinactive',type:'boolean'}
+        ],
+        joins: []
+    },
+    currency: {
+        label: 'currency',
+        columns: [
+            {name:'id',type:'integer'},{name:'name',type:'string'},{name:'symbol',type:'string'},
+            {name:'exchangerate',type:'float'},{name:'isinactive',type:'boolean'},{name:'isbasecurrency',type:'boolean'}
+        ],
+        joins: []
+    },
+    account: {
+        label: 'account',
+        columns: [
+            {name:'id',type:'integer'},{name:'acctnumber',type:'string'},{name:'acctname',type:'string'},
+            {name:'type',type:'string'},{name:'description',type:'string'},{name:'parent',type:'integer'},
+            {name:'subsidiary',type:'integer'},{name:'currency',type:'integer'},{name:'isinactive',type:'boolean'},
+            {name:'cashflowrate',type:'string'},{name:'generalrate',type:'string'}
+        ],
+        joins: []
+    },
+    journalentry: {
+        label: 'journalentry',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'memo',type:'string'},{name:'subsidiary',type:'integer'},{name:'currency',type:'integer'},
+            {name:'postingperiod',type:'integer'},{name:'approved',type:'boolean'},{name:'tosubsidiary',type:'integer'}
+        ],
+        joins: []
+    },
+    journalentryline: {
+        label: 'journalentryline',
+        columns: [
+            {name:'id',type:'integer'},{name:'journalentry',type:'integer'},{name:'account',type:'integer'},
+            {name:'debit',type:'float'},{name:'credit',type:'float'},{name:'memo',type:'string'},
+            {name:'entity',type:'integer'},{name:'department',type:'integer'},{name:'class',type:'integer'},
+            {name:'location',type:'integer'}
+        ],
+        joins: [{table:'journalentry',left:'journalentry',right:'id'},{table:'account',left:'account',right:'id'}]
+    },
+    opportunity: {
+        label: 'opportunity',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'salesrep',type:'integer'},{name:'expectedclosedate',type:'date'},
+            {name:'probability',type:'float'},{name:'projectedtotal',type:'float'},{name:'status',type:'string'},
+            {name:'memo',type:'string'},{name:'subsidiary',type:'integer'}
+        ],
+        joins: [{table:'customer',left:'entity',right:'id'}]
+    },
+    estimate: {
+        label: 'estimate',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'amount',type:'float'},{name:'status',type:'string'},
+            {name:'memo',type:'string'},{name:'subsidiary',type:'integer'},{name:'validuntil',type:'date'}
+        ],
+        joins: [{table:'customer',left:'entity',right:'id'}]
+    },
+    timebill: {
+        label: 'timebill',
+        columns: [
+            {name:'id',type:'integer'},{name:'trandate',type:'date'},{name:'employee',type:'integer'},
+            {name:'customer',type:'integer'},{name:'casetaskevent',type:'integer'},{name:'hours',type:'float'},
+            {name:'rate',type:'float'},{name:'amount',type:'float'},{name:'memo',type:'string'},
+            {name:'isinvoiced',type:'boolean'},{name:'approvalstatus',type:'integer'}
+        ],
+        joins: [{table:'employee',left:'employee',right:'id'},{table:'customer',left:'customer',right:'id'}]
+    },
+    expensereport: {
+        label: 'expensereport',
+        columns: [
+            {name:'id',type:'integer'},{name:'tranid',type:'string'},{name:'trandate',type:'date'},
+            {name:'entity',type:'integer'},{name:'amount',type:'float'},{name:'status',type:'string'},
+            {name:'memo',type:'string'},{name:'approvalstatus',type:'integer'},{name:'subsidiary',type:'integer'},
+            {name:'currency',type:'integer'}
+        ],
+        joins: [{table:'employee',left:'entity',right:'id'}]
+    }
+};
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let currentBaseTable = '';
+let selectedCols = {};     // { 'table.col': true }
+let joins = [];            // [{type, table, leftCol, rightCol}]
+let wheres = [];           // [{andor, col, op, val}]
+let lastNextPageLink = null;
+let lastQuery = '';
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    // Restore connection settings
+    const cn = sessionStorage.getItem('companyName');
+    const fk = sessionStorage.getItem('functionsKey');
+    if (cn) document.getElementById('companyName').value = cn;
+    if (fk) document.getElementById('functionsKey').value = fk;
+
+    // Connection panel toggle
+    document.getElementById('connToggle').addEventListener('click', () => {
+        document.getElementById('connBody').classList.toggle('hidden');
+    });
+
+    // Save creds on change
+    ['companyName','functionsKey'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            sessionStorage.setItem('companyName', document.getElementById('companyName').value);
+            sessionStorage.setItem('functionsKey', document.getElementById('functionsKey').value);
+        });
+    });
+
+    renderSchemaList();
+    populateBaseTableSelect();
+});
+
+// ════════════════════════════════════════════════
+//  SCHEMA BROWSER
+// ════════════════════════════════════════════════
+function renderSchemaList(filter = '') {
+    const container = document.getElementById('schemaTableList');
+    container.innerHTML = '';
+    Object.keys(SCHEMA)
+        .filter(k => k.toLowerCase().includes(filter.toLowerCase()))
+        .forEach(key => {
+            const div = document.createElement('div');
+            div.className = 'schema-table-item' + (key === currentBaseTable ? ' selected' : '');
+            div.innerHTML = `
+                <span class="schema-table-name">${key}</span>
+                <button class="schema-load-btn" title="Load columns from NetSuite" onclick="loadColumnsFromNS('${key}')">&#8635;</button>
+            `;
+            div.addEventListener('click', e => {
+                if (e.target.classList.contains('schema-load-btn')) return;
+                document.getElementById('baseTableSelect').value = key;
+                onBaseTableChange();
+            });
+            container.appendChild(div);
+        });
+}
+
+document.getElementById('schemaSearch').addEventListener('input', e => renderSchemaList(e.target.value));
+
+// ════════════════════════════════════════════════
+//  BASE TABLE
+// ════════════════════════════════════════════════
+function populateBaseTableSelect() {
+    const sel = document.getElementById('baseTableSelect');
+    Object.keys(SCHEMA).forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = k;
+        sel.appendChild(opt);
+    });
+}
+
+function onBaseTableChange() {
+    const val = document.getElementById('baseTableSelect').value;
+    currentBaseTable = val;
+    selectedCols = {};
+    joins = [];
+    wheres = [];
+    renderColumns();
+    renderJoins();
+    renderWheres();
+    renderSchemaList(document.getElementById('schemaSearch').value);
+    buildQuery();
+}
+
+// ════════════════════════════════════════════════
+//  COLUMNS
+// ════════════════════════════════════════════════
+function getTableCols(tableName) {
+    return (SCHEMA[tableName] && SCHEMA[tableName].columns) || [];
+}
+
+function getAllSelectedTables() {
+    const tables = [];
+    if (currentBaseTable) tables.push(currentBaseTable);
+    joins.forEach(j => { if (j.table && !tables.includes(j.table)) tables.push(j.table); });
+    return tables;
+}
+
+function renderColumns() {
+    const grid = document.getElementById('colGrid');
+    grid.innerHTML = '';
+    const filter = document.getElementById('colSearch').value.toLowerCase();
+    const tables = getAllSelectedTables();
+
+    tables.forEach(tableName => {
+        const cols = getTableCols(tableName);
+        const header = document.createElement('div');
+        header.style.cssText = 'grid-column:1/-1;font-size:0.75em;font-weight:700;color:#aaa4a5;text-transform:uppercase;padding:4px 0 2px 0;border-top:1px solid #e0e4f0;margin-top:4px;';
+        header.textContent = tableName;
+        if (tables.length > 1) grid.appendChild(header);
+
+        cols.filter(c => c.name.toLowerCase().includes(filter)).forEach(col => {
+            const key = `${tableName}.${col.name}`;
+            const div = document.createElement('label');
+            div.className = 'col-item';
+            div.innerHTML = `
+                <input type="checkbox" ${selectedCols[key] ? 'checked' : ''} data-key="${key}">
+                <span class="col-item-name">${col.name}</span>
+                <span class="col-item-type">${col.type}</span>
+            `;
+            div.querySelector('input').addEventListener('change', e => {
+                if (e.target.checked) selectedCols[key] = true;
+                else delete selectedCols[key];
+                updateOrderByOptions();
+                buildQuery();
+            });
+            grid.appendChild(div);
+        });
+    });
+
+    updateOrderByOptions();
+}
+
+function selectAllCols(checked) {
+    const all = getAllSelectedTables();
+    all.forEach(t => getTableCols(t).forEach(c => {
+        const key = `${t}.${c.name}`;
+        if (checked) selectedCols[key] = true;
+        else delete selectedCols[key];
+    }));
+    renderColumns();
+    buildQuery();
+}
+
+// ════════════════════════════════════════════════
+//  JOINS
+// ════════════════════════════════════════════════
+function addJoin() {
+    if (!currentBaseTable) { alert('Select a base table first.'); return; }
+    joins.push({ type: 'INNER JOIN', table: '', leftCol: '', rightCol: '' });
+    renderJoins();
+    buildQuery();
+}
+
+function removeJoin(idx) {
+    joins.splice(idx, 1);
+    renderColumns();
+    renderJoins();
+    renderWheres();
+    buildQuery();
+}
+
+function renderJoins() {
+    const container = document.getElementById('joinRows');
+    if (joins.length === 0) {
+        container.innerHTML = '<p style="color:#888;font-size:0.82em;margin:0;">No joins yet. Select a base table first.</p>';
+        return;
+    }
+    container.innerHTML = '';
+    joins.forEach((j, idx) => {
+        const allTables = Object.keys(SCHEMA);
+        const leftCols = getAllSelectedTables().flatMap(t => getTableCols(t).map(c => ({key:`${t}.${c.name}`,label:`${t}.${c.name}`})));
+        const rightCols = j.table ? getTableCols(j.table).map(c => ({key:c.name,label:c.name})) : [];
+
+        const row = document.createElement('div');
+        row.className = 'join-row';
+        row.innerHTML = `
+            <select onchange="joins[${idx}].type=this.value;buildQuery()">
+                ${['INNER JOIN','LEFT JOIN'].map(t=>`<option ${j.type===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+            <select onchange="joins[${idx}].table=this.value;renderJoins();renderColumns();renderWheres();buildQuery()">
+                <option value="">— table —</option>
+                ${allTables.map(t=>`<option value="${t}" ${j.table===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+            <span class="join-eq">ON</span>
+            <select onchange="joins[${idx}].leftCol=this.value;buildQuery()">
+                <option value="">— left col —</option>
+                ${leftCols.map(c=>`<option value="${c.key}" ${j.leftCol===c.key?'selected':''}>${c.label}</option>`).join('')}
+            </select>
+            <span class="join-eq">=</span>
+            <select onchange="joins[${idx}].rightCol=this.value;buildQuery()">
+                <option value="">— right col —</option>
+                ${rightCols.map(c=>`<option value="${c.key}" ${j.rightCol===c.key?'selected':''}>${j.table+'.'+c.label}</option>`).join('')}
+            </select>
+            <button class="btn btn-sm btn-danger" onclick="removeJoin(${idx})">&#10005;</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+// ════════════════════════════════════════════════
+//  WHERE
+// ════════════════════════════════════════════════
+const OPS = ['=','!=','>','<','>=','<=','LIKE','NOT LIKE','IN','IS NULL','IS NOT NULL'];
+
+function addWhere() {
+    wheres.push({ andor: 'AND', col: '', op: '=', val: '' });
+    renderWheres();
+    buildQuery();
+}
+
+function removeWhere(idx) {
+    wheres.splice(idx, 1);
+    renderWheres();
+    buildQuery();
+}
+
+function renderWheres() {
+    const container = document.getElementById('whereRows');
+    if (wheres.length === 0) {
+        container.innerHTML = '<p style="color:#888;font-size:0.82em;margin:0;">No conditions yet.</p>';
+        return;
+    }
+    const allCols = getAllSelectedTables().flatMap(t => getTableCols(t).map(c => `${t}.${c.name}`));
+    container.innerHTML = '';
+    wheres.forEach((w, idx) => {
+        const noVal = w.op === 'IS NULL' || w.op === 'IS NOT NULL';
+        const row = document.createElement('div');
+        row.className = 'where-row';
+        row.innerHTML = `
+            ${idx === 0
+                ? '<span style="font-size:0.78em;font-weight:700;color:#232946;">WHERE</span>'
+                : `<button class="where-andor" onclick="wheres[${idx}].andor=wheres[${idx}].andor==='AND'?'OR':'AND';renderWheres();buildQuery()">${w.andor}</button>`}
+            <select onchange="wheres[${idx}].col=this.value;buildQuery()">
+                <option value="">— column —</option>
+                ${allCols.map(c=>`<option value="${c}" ${w.col===c?'selected':''}>${c}</option>`).join('')}
+            </select>
+            <select onchange="wheres[${idx}].op=this.value;renderWheres();buildQuery()">
+                ${OPS.map(o=>`<option ${w.op===o?'selected':''}>${o}</option>`).join('')}
+            </select>
+            <input type="text" placeholder="value" value="${noVal?'':w.val}" ${noVal?'disabled':''}
+                   oninput="wheres[${idx}].val=this.value;buildQuery()">
+            <button class="btn btn-sm btn-danger" onclick="removeWhere(${idx})">&#10005;</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+// ════════════════════════════════════════════════
+//  ORDER BY OPTIONS
+// ════════════════════════════════════════════════
+function updateOrderByOptions() {
+    const sel = document.getElementById('orderByCol');
+    const current = sel.value;
+    const allCols = getAllSelectedTables().flatMap(t => getTableCols(t).map(c => `${t}.${c.name}`));
+    sel.innerHTML = '<option value="">— none —</option>' +
+        allCols.map(c => `<option value="${c}" ${c===current?'selected':''}>${c}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════
+//  QUERY BUILDER
+// ════════════════════════════════════════════════
+function buildQuery() {
+    if (!currentBaseTable) {
+        document.getElementById('queryPreview').textContent = '-- Select a base table to begin.';
+        lastQuery = '';
+        return;
+    }
+
+    // SELECT clause
+    const selKeys = Object.keys(selectedCols);
+    let selectClause;
+    if (selKeys.length === 0) {
+        selectClause = `${currentBaseTable}.*`;
+    } else {
+        const allTables = getAllSelectedTables();
+        // Use alias if multiple tables
+        if (allTables.length === 1) {
+            selectClause = selKeys.map(k => k.split('.')[1]).join(',\n       ');
+        } else {
+            selectClause = selKeys.join(',\n       ');
+        }
+    }
+
+    // FROM
+    let sql = `SELECT ${selectClause}\nFROM   ${currentBaseTable}`;
+
+    // JOINs
+    joins.forEach(j => {
+        if (j.table && j.leftCol && j.rightCol) {
+            const rightFull = j.rightCol.includes('.') ? j.rightCol : `${j.table}.${j.rightCol}`;
+            sql += `\n${j.type} ${j.table} ON ${j.leftCol} = ${rightFull}`;
+        }
+    });
+
+    // WHERE
+    const validWheres = wheres.filter(w => w.col);
+    if (validWheres.length > 0) {
+        validWheres.forEach((w, i) => {
+            const prefix = i === 0 ? '\nWHERE  ' : `\n  ${w.andor}  `;
+            const noVal = w.op === 'IS NULL' || w.op === 'IS NOT NULL';
+            const val = noVal ? '' : (w.op === 'LIKE' || w.op === 'NOT LIKE')
+                ? `'${w.val}'`
+                : isNaN(w.val) || w.val === ''
+                    ? `'${w.val}'`
+                    : w.val;
+            sql += `${prefix}${w.col} ${w.op}${noVal ? '' : ' ' + val}`;
+        });
+    }
+
+    // ORDER BY
+    const orderCol = document.getElementById('orderByCol').value;
+    const orderDir = document.getElementById('orderDir').value;
+    if (orderCol) sql += `\nORDER BY ${orderCol} ${orderDir}`;
+
+    // LIMIT / OFFSET
+    const limit = parseInt(document.getElementById('limitVal').value) || 100;
+    const offset = parseInt(document.getElementById('offsetVal').value) || 0;
+    sql += `\nFETCH FIRST ${limit} ROWS ONLY`;
+    if (offset > 0) sql = sql.replace(`FROM   ${currentBaseTable}`, `/* OFFSET ${offset} applied via nextPageLink */\nFROM   ${currentBaseTable}`);
+
+    document.getElementById('queryPreview').textContent = sql;
+    lastQuery = sql;
+}
+
+// ════════════════════════════════════════════════
+//  COPY
+// ════════════════════════════════════════════════
+function copyQuery() {
+    const text = document.getElementById('queryPreview').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+}
+
+// ════════════════════════════════════════════════
+//  API HELPERS
+// ════════════════════════════════════════════════
+function getEndpoint() {
+    const cn = document.getElementById('companyName').value.trim();
+    return `https://nsrestinterface-${cn}.azurewebsites.net/api/netsuiteSuiteqlQuery`;
+}
+
+function getKey() {
+    return document.getElementById('functionsKey').value.trim();
+}
+
+async function runQuery(query, nextPageLink) {
+    const body = { query };
+    if (nextPageLink) body.nextPageLink = nextPageLink;
+    const resp = await fetch(getEndpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-functions-key': getKey() },
+        body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data?.['o:errorDetails']?.[0]?.detail || `HTTP ${resp.status}`);
+    return data;
+}
+
+// ════════════════════════════════════════════════
+//  TEST CONNECTION
+// ════════════════════════════════════════════════
+async function testConnection() {
+    const btn = document.getElementById('testConnBtn');
+    const statusEl = document.getElementById('connStatus');
+    btn.textContent = '…';
+    btn.disabled = true;
+    try {
+        await runQuery("SELECT id FROM transaction FETCH FIRST 1 ROWS ONLY");
+        statusEl.className = 'conn-status ok';
+        statusEl.innerHTML = '<span class="conn-dot"></span> Connected';
+    } catch (e) {
+        statusEl.className = 'conn-status err';
+        statusEl.innerHTML = '<span class="conn-dot"></span> ' + e.message.slice(0, 60);
+    } finally {
+        btn.textContent = 'Test Connection';
+        btn.disabled = false;
+    }
+}
+
+// ════════════════════════════════════════════════
+//  LOAD COLUMNS FROM NETSUITE
+// ════════════════════════════════════════════════
+async function loadColumnsFromNS(tableName) {
+    if (!tableName) { alert('Select or specify a table name.'); return; }
+    if (!document.getElementById('companyName').value || !document.getElementById('functionsKey').value) {
+        alert('Enter connection settings first.'); return;
+    }
+    try {
+        const data = await runQuery(`SELECT * FROM ${tableName} FETCH FIRST 0 ROWS ONLY`);
+        // Some NS instances return columns in items even with 0 rows via metadata
+        // Try to get columns from a 1-row query fallback
+        const data1 = await runQuery(`SELECT * FROM ${tableName} FETCH FIRST 1 ROWS ONLY`);
+        if (data1.items && data1.items.length > 0) {
+            const cols = Object.keys(data1.items[0]).map(name => ({ name, type: 'string' }));
+            SCHEMA[tableName] = SCHEMA[tableName] || { label: tableName, columns: [], joins: [] };
+            SCHEMA[tableName].columns = cols;
+            if (!document.getElementById('baseTableSelect').querySelector(`option[value="${tableName}"]`)) {
+                const opt = document.createElement('option');
+                opt.value = tableName; opt.textContent = tableName;
+                document.getElementById('baseTableSelect').appendChild(opt);
+            }
+            renderColumns();
+            renderSchemaList(document.getElementById('schemaSearch').value);
+            showMsg('execMsg', `Loaded ${cols.length} columns for ${tableName}`, false);
+        } else {
+            showMsg('execMsg', `No rows returned — cannot infer columns for ${tableName}`, true);
+        }
+    } catch (e) {
+        showMsg('execMsg', e.message, true);
+    }
+}
+
+// ════════════════════════════════════════════════
+//  EXECUTE QUERY
+// ════════════════════════════════════════════════
+async function executeQuery() {
+    if (!lastQuery) { alert('Build a query first.'); return; }
+    if (!document.getElementById('companyName').value || !document.getElementById('functionsKey').value) {
+        alert('Enter connection settings first.'); return;
+    }
+
+    const btn = document.getElementById('execBtn');
+    btn.innerHTML = '<span class="spin">&#8635;</span> Running…';
+    btn.disabled = true;
+    clearMsg('execMsg');
+    lastNextPageLink = null;
+
+    try {
+        const data = await runQuery(lastQuery);
+        renderResults(data, false);
+    } catch (e) {
+        showMsg('execMsg', e.message, true);
+        document.getElementById('resultsWrap').style.display = 'none';
+    } finally {
+        btn.innerHTML = '&#9654; Execute';
+        btn.disabled = false;
+    }
+}
+
+async function loadNextPage() {
+    if (!lastNextPageLink) return;
+    const btn = document.getElementById('nextPageBtn');
+    btn.textContent = 'Loading…';
+    btn.disabled = true;
+    try {
+        const data = await runQuery(lastQuery, lastNextPageLink);
+        renderResults(data, true);
+    } catch (e) {
+        showMsg('execMsg', e.message, true);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// ════════════════════════════════════════════════
+//  RENDER RESULTS
+// ════════════════════════════════════════════════
+function renderResults(data, append) {
+    const wrap = document.getElementById('resultsWrap');
+    const table = document.getElementById('resultsTable');
+    const label = document.getElementById('resultsLabel');
+    const nextBtn = document.getElementById('nextPageBtn');
+
+    const items = data.items || [];
+    const count = data.count || items.length;
+    const hasMore = data.hasMore || false;
+
+    // Update next page link
+    if (hasMore && data.links) {
+        const nextLink = data.links.find(l => l.rel === 'next');
+        lastNextPageLink = nextLink ? nextLink.href : null;
+    } else {
+        lastNextPageLink = null;
+    }
+
+    nextBtn.style.display = lastNextPageLink ? 'inline-block' : 'none';
+    nextBtn.textContent = 'Load Next Page';
+
+    if (!append || !table.tHead) {
+        table.innerHTML = '';
+        if (items.length === 0) {
+            label.textContent = 'Results — 0 rows';
+            table.innerHTML = '<tr><td style="color:#888;padding:16px;">No results returned.</td></tr>';
+            wrap.style.display = 'block';
+            return;
+        }
+        const keys = Object.keys(items[0]);
+        const thead = table.createTHead();
+        const hr = thead.insertRow();
+        keys.forEach(k => { const th = document.createElement('th'); th.textContent = k; hr.appendChild(th); });
+        table.createTBody();
+    }
+
+    const tbody = table.tBodies[0];
+    items.forEach(item => {
+        const keys = Object.keys(item);
+        const row = tbody.insertRow();
+        keys.forEach(k => { const td = row.insertCell(); td.textContent = item[k] ?? ''; });
+    });
+
+    label.textContent = `Results — ${tbody.rows.length} row${tbody.rows.length !== 1 ? 's' : ''}${hasMore ? ' (more available)' : ''}`;
+    wrap.style.display = 'block';
+    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ════════════════════════════════════════════════
+//  EXPORT CSV
+// ════════════════════════════════════════════════
+function exportCsv() {
+    const table = document.getElementById('resultsTable');
+    if (!table.tHead) return;
+    const rows = [];
+    const headers = Array.from(table.tHead.rows[0].cells).map(c => `"${c.textContent}"`);
+    rows.push(headers.join(','));
+    Array.from(table.tBodies[0].rows).forEach(r => {
+        rows.push(Array.from(r.cells).map(c => `"${c.textContent.replace(/"/g,'""')}"`).join(','));
+    });
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `suiteql-results-${Date.now()}.csv`;
+    a.click();
+}
+
+// ════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════
+function showMsg(id, text, isError) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'msg ' + (isError ? 'msg-err' : 'msg-ok');
+}
+function clearMsg(id) {
+    const el = document.getElementById(id);
+    el.textContent = '';
+    el.className = '';
+}
+</script>
+</body>
+</html>
