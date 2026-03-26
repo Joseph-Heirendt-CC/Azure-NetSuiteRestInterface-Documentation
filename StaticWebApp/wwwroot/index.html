@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="API documentation for the Azure NetSuite REST Interface — SuiteQL queries and CRUD operations via Azure Functions.">
     <title>Azure - NetSuite REST Interface</title>
     <style>
         body {
@@ -84,6 +85,7 @@
             font-size: 1em;
             overflow-x: auto;
             margin-bottom: 1.2em;
+            position: relative;
         }
 
         .example {
@@ -112,6 +114,14 @@
             background: #aaa4a5;
             color: #232946;
         }
+        td.required-yes {
+            background: #e8f4ea;
+            color: #2d6a4f;
+            font-weight: 600;
+        }
+        td.required-no {
+            color: #666;
+        }
 
         /* Section divider */
         .section-divider {
@@ -120,28 +130,94 @@
             margin: 40px 0 30px 0;
         }
 
+        /* HTTP method badges */
+        .method-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-left: 2px;
+        }
+        .method-get    { background: #d4edda; color: #155724; }
+        .method-post   { background: #cce5ff; color: #004085; }
+        .method-patch  { background: #fff3cd; color: #856404; }
+        .method-delete { background: #f8d7da; color: #721c24; }
+
+        /* Copy-to-clipboard button */
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #3d4f7c;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 0.78em;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .copy-btn:hover { opacity: 1; }
+
+        /* Hamburger button — mobile only */
+        .hamburger {
+            display: none;
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 200;
+            background: #232946;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 1.3em;
+            cursor: pointer;
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 150;
+        }
+        .sidebar-overlay.open { display: block; }
+
         @media (max-width: 900px) {
+            .hamburger { display: block; }
             .sidebar {
-                display: none;
+                position: fixed;
+                left: -260px;
+                top: 0;
+                height: 100vh;
+                z-index: 160;
+                transition: left 0.25s ease;
             }
+            .sidebar.open { left: 0; }
             .content {
                 margin-left: 0;
                 max-width: 100vw;
-                padding: 18px 6vw;
+                padding: 56px 6vw 18px 6vw;
             }
         }
-    </style>
     </style>
 </head>
 
 <body>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open navigation">&#9776;</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="sidebar" id="sidebarNav">
         <h2>API Documentation</h2>
-        <a href="#API Documentation">Overview</a>
+        <a href="#api-documentation">Overview</a>
         <a href="#about">About</a>
         <a href="#key-features">Key Features</a>
         <a href="#use-cases">Use Cases</a>
         <a href="#benefits">Benefits</a>
+        <a href="#getting-started">Getting Started</a>
         <a href="#netsuiteSuiteqlQuery">netsuiteSuiteqlQuery</a>
         <a href="#netsuitePatchRequest">netsuitePatchRequest</a>
         <a href="#netsuitePostRequest">netsuitePostRequest</a>
@@ -152,63 +228,20 @@
         <a href="#additional-resources">Additional Resources</a>
     </div>
 
-    <script>
-    // Highlight active section in sidebar
-    document.addEventListener('DOMContentLoaded', function() {
-        const sidebar = document.getElementById('sidebarNav');
-        if (!sidebar) return;
-        const links = sidebar.querySelectorAll('a');
-        const sectionIds = Array.from(links).map(link => link.getAttribute('href'));
-        const sections = sectionIds.map(id => document.querySelector(id));
-
-        function activateLink() {
-            let found = false;
-            const scrollPos = window.scrollY + 100;
-            links.forEach((link, i) => {
-                link.classList.remove('active');
-                const section = sections[i];
-                if (section && !found && scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
-                    link.classList.add('active');
-                    found = true;
-                }
-            });
-        }
-
-        // Click: scroll to section and highlight only that link
-        links.forEach((link, i) => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const section = sections[i];
-                if (section) {
-                    window.scrollTo({ top: section.offsetTop - 20, behavior: 'smooth' });
-                }
-                links.forEach(l => l.classList.remove('active'));
-                link.classList.add('active');
-            });
-        });
-
-        window.addEventListener('scroll', activateLink);
-        activateLink();
-    });
-    </script>
-
     <div class="content">
-        <h1 id="API Documentation">Azure - NetSuite REST Interface</h1>
+        <h1 id="api-documentation">Azure - NetSuite REST Interface</h1>
 
-<h2 id="about">About</h2>
-<p>
-  This documentation provides a comprehensive overview of an Azure Function application built to interface seamlessly with NetSuite's REST API. Designed for performance and scalability, the application minimizes computational overhead while enabling secure, real-time access to NetSuite data. Leveraging serverless architecture and optimized request handling, it supports efficient execution of SuiteQL queries and CRUD operations. Ideal for automation workflows, system integrations, and data-driven services, this solution eliminates the need for complex middleware and delivers a lightweight, maintainable interface for enterprise environments.
-</p>
-
-
+        <h2 id="about">About</h2>
+        <p>
+            This documentation provides a comprehensive overview of an Azure Function application built to interface seamlessly with NetSuite's REST API. Designed for performance and scalability, the application minimizes computational overhead while enabling secure, real-time access to NetSuite data. Leveraging serverless architecture and optimized request handling, it supports efficient execution of SuiteQL queries and CRUD operations. Ideal for automation workflows, system integrations, and data-driven services, this solution eliminates the need for complex middleware and delivers a lightweight, maintainable interface for enterprise environments.
+        </p>
 
         <h2 id="key-features">Key Features</h2>
         <ul>
             <li>Endpoint Integration: Dedicated endpoints for executing SuiteQL queries and performing CRUD operations.</li>
             <li>Authentication: Secure access using an authentication header (<code>x-functions-key</code>).</li>
             <li>Query Execution: Dynamic data retrieval from NetSuite.</li>
-
-            <li>Continuous Improvement: CI/CD Pipeline for continuous updates and enhancements with the ability to push updates to client Azure environmments through Github Actions.</li>
+            <li>Continuous Improvement: CI/CD Pipeline for continuous updates and enhancements with the ability to push updates to client Azure environments through Github Actions.</li>
         </ul>
 
         <h2 id="use-cases">Use Cases</h2>
@@ -222,13 +255,21 @@
 
         <h2 id="benefits">Benefits</h2>
         <ul>
-            <li>Solution Cost: Extremeley low operational overhead.</li>
+            <li>Solution Cost: Extremely low operational overhead.</li>
             <li>Scalability: Built on Azure Functions, allowing for automatic scaling based on demand.</li>
             <li>Security: Built-in authentication and secure communication protocols.</li>
             <li>Flexibility: Execute custom SuiteQL queries.</li>
             <li>Efficiency: Streamlined data access and manipulation through RESTful endpoints.</li>
             <li>In House Development: Developed in-house, allowing for tailored solutions to meet specific business needs.</li>
         </ul>
+
+        <h2 id="getting-started">Getting Started</h2>
+        <p>
+            All endpoints require an <code>x-functions-key</code> header for authentication. This key is generated by Azure Functions and can be retrieved from the Azure Portal under your Function App &rarr; <strong>Functions</strong> &rarr; select the function &rarr; <strong>Function Keys</strong>. Contact your Azure administrator if you do not have portal access.
+        </p>
+        <p>
+            Every endpoint URL contains the placeholder <code>{companyName}</code>. Replace this with your Azure Function App name (the subdomain of your <code>.azurewebsites.net</code> deployment). For example, if your app is deployed at <code>nsrestinterface-acmecorp.azurewebsites.net</code>, use <code>acmecorp</code> as the value.
+        </p>
 
         <h2 id="netsuiteSuiteqlQuery">Function: <code>netsuiteSuiteqlQuery</code></h2>
         <p><strong>Endpoint:</strong>
@@ -237,10 +278,10 @@
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <h4>Parameters</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-            <tr><td>query</td><td>string</td><td>Yes</td><td>SuiteQL query string to execute.</td></tr>
-            <tr><td>nextPageLink</td><td>string</td><td>No</td><td>Optional. If paginating, pass the <code>nextPageLink</code> value from a previous response to retrieve the next page of results.</td></tr>
+            <tr><td>query</td><td>string</td><td class="required-yes">Yes</td><td>SuiteQL query string to execute.</td></tr>
+            <tr><td>nextPageLink</td><td>string</td><td class="required-no">No</td><td>Optional. If paginating, pass the <code>nextPageLink</code> value from a previous response to retrieve the next page of results.</td></tr>
         </table>
 
         <h4>Notes</h4>
@@ -251,6 +292,30 @@
         </ul>
 
         <div class="example">
+            <h4>Ex 1: Basic Query</h4>
+            <p><strong>Method:</strong> <span class="method-badge method-post">POST</span></p>
+            <p><strong>URL:</strong>
+                <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteSuiteqlQuery</code>
+            </p>
+            <p><strong>Headers:</strong> <code>x-functions-key</code></p>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "query": "select id, trandate, entity from transaction where type = 'SalesOrd' and trandate >= '1/1/2025'"
+}
+            </pre>
+            <p><strong>Success Response:</strong></p>
+            <pre>
+{
+    "items": [
+        { "id": "1001", "trandate": "1/15/2025", "entity": "100" },
+        { "id": "1002", "trandate": "2/11/2025", "entity": "101" }
+    ],
+    "count": 2,
+    "hasMore": false
+}
+            </pre>
+            <h4>Ex 2: Invalid Query (Error)</h4>
             <p><strong>Payload:</strong></p>
             <pre>
 {
@@ -339,25 +404,27 @@
     "items": [ ... ]
 }
             </pre>
-    "offset": 0,
-    "totalResults": 1
+            <h4>Ex 6: Invalid SuiteQL Syntax (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "query": "select top(1) * from transaction where type = 'SalesOrd'"
 }
             </pre>
             <p><strong>Error Response:</strong></p>
             <pre>
-    {
+{
     "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
     "title": "Bad Request",
     "status": 400,
     "o:errorDetails": [
         {
-            "detail": "Invalid search query. Detailed unprocessed description follows. Search error occurred: 
-                Failed to parse SQL [select top(1) * from transaction where type = 'SalesOrd]: end of input, state:1224(10102) near:  (0,0, token code:0).",
+            "detail": "Invalid search query. Detailed unprocessed description follows. Search error occurred: Failed to parse SQL [select top(1) * from transaction where type = 'SalesOrd]: end of input, state:1224(10102) near: (0,0, token code:0).",
             "o:errorQueryParam": "q",
             "o:errorCode": "INVALID_PARAMETER"
         }
     ]
-    }
+}
             </pre>
         </div>
 
@@ -368,35 +435,36 @@
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <h4>Parameters</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record (e.g., customer, inventoryItem).</td></tr>
-            <tr><td>recordId</td><td>string</td><td>Yes</td><td>Internal or external ID of the record to update.</td></tr>
-            <tr><td>requestBody</td><td>object</td><td>Yes</td><td>Fields to update in the record.</td></tr>
+            <tr><td>recordType</td><td>string</td><td class="required-yes">Yes</td><td>Type of NetSuite record (e.g., customer, inventoryItem).</td></tr>
+            <tr><td>recordId</td><td>string</td><td class="required-yes">Yes</td><td>Internal or external ID of the record to update.</td></tr>
+            <tr><td>requestBody</td><td>object</td><td class="required-yes">Yes</td><td>Fields to update in the record.</td></tr>
         </table>
-
-
 
         <div class="example">
             <h4>Ex 1: Update Customer Record</h4>
-            <p><strong>Method:</strong> PATCH</p>
+            <p><strong>Method:</strong> <span class="method-badge method-patch">PATCH</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuitePatchRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "recordType": "customer",
-        "recordId": "6991",
-        "requestBody": {
-            "phone": "123-456-9999",
-            "email": "newemail@example.com",
-            "comments": "Comment update for example PATCH",
-            "salesRep": null
-        }
+{
+    "recordType": "customer",
+    "recordId": "6991",
+    "requestBody": {
+        "phone": "123-456-9999",
+        "email": "newemail@example.com",
+        "comments": "Comment update for example PATCH",
+        "salesRep": null
     }
-                </pre>
+}
+            </pre>
+        </div>
+
+        <div class="example">
             <h4>Ex 2: Invalid Record ID (Error)</h4>
             <p><strong>Payload:</strong></p>
             <pre>
@@ -423,28 +491,25 @@
         </div>
 
         <div class="example">
-            <h4>Ex 2: Update Item Record</h4>
-            <p><strong>Method:</strong> PATCH</p>
+            <h4>Ex 3: Update Item Record</h4>
+            <p><strong>Method:</strong> <span class="method-badge method-patch">PATCH</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuitePatchRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "recordType": "inventoryItem",
-        "recordId": "83353",
-        "requestBody": {
-            "displayname": "S/S 18K Sig Cav Dia Link BRCLT SZ 8",
-            "cost": 117.28,
-            "usebins": true
-        }
+{
+    "recordType": "inventoryItem",
+    "recordId": "83353",
+    "requestBody": {
+        "displayname": "S/S 18K Sig Cav Dia Link BRCLT SZ 8",
+        "cost": 117.28,
+        "usebins": true
     }
-                </pre>
+}
+            </pre>
         </div>
-
-
-
 
         <h2 id="netsuitePostRequest">Function: <code>netsuitePostRequest</code></h2>
         <p><strong>Endpoint:</strong>
@@ -453,35 +518,34 @@
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <h4>Parameters</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record to create.</td></tr>
-            <tr><td>requestBody</td><td>object</td><td>Yes</td><td>Fields for the new record.</td></tr>
+            <tr><td>recordType</td><td>string</td><td class="required-yes">Yes</td><td>Type of NetSuite record to create.</td></tr>
+            <tr><td>requestBody</td><td>object</td><td class="required-yes">Yes</td><td>Fields for the new record.</td></tr>
         </table>
 
         <div class="example">
             <h4>Ex 1: Create Customer Record</h4>
-            <p><strong>Method:</strong> POST</p>
+            <p><strong>Method:</strong> <span class="method-badge method-post">POST</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuitePostRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "recordType": "customer",
-        "requestBody": {
-            "entityid": "New Customer",
-            "companyname": "My Company",
-            "subsidiary": 1,
-            "email": "newcustomer@example.com",
-            "phone": "123-456-7890",
-            "custentity_mb_cust_class": 6
-        }
+{
+    "recordType": "customer",
+    "requestBody": {
+        "entityid": "New Customer",
+        "companyname": "My Company",
+        "subsidiary": 1,
+        "email": "newcustomer@example.com",
+        "phone": "123-456-7890",
+        "custentity_mb_cust_class": 6
     }
+}
             </pre>
         </div>
-
 
         <h2 id="netsuiteGetRequest">Function: <code>netsuiteGetRequest</code></h2>
         <p><strong>Endpoint:</strong>
@@ -490,107 +554,109 @@
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <h4>Parameters</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record to retrieve.</td></tr>
-            <tr><td>recordId</td><td>string</td><td>Yes</td><td>Internal or external ID (prefix <code>eid:</code>) of the record.</td></tr>
-            <tr><td>extension</td><td>string</td><td>No</td><td>Optional query string extension (e.g., <code>?fields=field1,field2</code>).</td></tr>
+            <tr><td>recordType</td><td>string</td><td class="required-yes">Yes</td><td>Type of NetSuite record to retrieve.</td></tr>
+            <tr><td>recordId</td><td>string</td><td class="required-yes">Yes</td><td>Internal or external ID (prefix <code>eid:</code>) of the record.</td></tr>
+            <tr><td>extension</td><td>string</td><td class="required-no">No</td><td>Optional query string extension (e.g., <code>?fields=field1,field2</code>).</td></tr>
         </table>
 
         <div class="example">
             <h4>Ex 1: Get Customer Record by Internal ID</h4>
-            <p><strong>Method:</strong> POST, GET</p>
+            <p><strong>Method:</strong> <span class="method-badge method-post">POST</span> <span class="method-badge method-get">GET</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "recordType": "customer",
-        "recordId": "6991",
-        "extension": ""
-    }
+{
+    "recordType": "customer",
+    "recordId": "6991",
+    "extension": ""
+}
             </pre>
             <p><strong>Success Response:</strong></p>
             <pre>
-    {
+{
+    "links": [
+        {
+            "rel": "self",
+            "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/7092"
+        }
+    ],
+    "addressBook": {
         "links": [
             {
                 "rel": "self",
-                "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/7092"
+                "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/7092/addressBook"
             }
-        ],
-        "addressBook": {
-            "links": [
-                {
-                    "rel": "self",
-                    "href": "https://7028935-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/7092/addressBook"
-                }
-            ]
-        },
-        "aging": 0.0,
-        "aging1": 0.0,
-        "aging2": 0.0,
-        "aging3": 0.0,
-        "aging4": 0.0,
-        "balance": 0.0,
-        ......
-        "comments": "Comment update for example PATCH",
-        "companyName": "ABC Corp",
-        "unbilledOrders": 0.0,
-        "unsubscribe": true
-    }
+        ]
+    },
+    "aging": 0.0,
+    "aging1": 0.0,
+    "aging2": 0.0,
+    "aging3": 0.0,
+    "aging4": 0.0,
+    "balance": 0.0,
+    "......": "...",
+    "comments": "Comment update for example PATCH",
+    "companyName": "ABC Corp",
+    "unbilledOrders": 0.0,
+    "unsubscribe": true
+}
             </pre>
             <p><strong>Error Response:</strong></p>
             <pre>
-    {
-        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
-        "title": "Not Found",
-        "status": 404,
-        "o:errorDetails": [
-            {
-                "detail": "The record instance does not exist. Provide a valid record instance ID.",
-                "o:errorCode": "NONEXISTENT_ID"
-            }
-        ]
-    }
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+    "title": "Not Found",
+    "status": 404,
+    "o:errorDetails": [
+        {
+            "detail": "The record instance does not exist. Provide a valid record instance ID.",
+            "o:errorCode": "NONEXISTENT_ID"
+        }
+    ]
+}
             </pre>
             <p><strong>Note:</strong> The <code>recordId</code> can be an internal ID or an external ID prefixed with <code>eid:</code>.</p>
         </div>
+
         <div class="example">
             <h4>Ex 2: Get Customer Record by External ID</h4>
-            <p><strong>Method:</strong>POST, GET</p>
+            <p><strong>Method:</strong> <span class="method-badge method-post">POST</span> <span class="method-badge method-get">GET</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "recordType": "customer",
-        "recordId": "eid:Cusomer-111111111",
-        "extension": ""
-    }
-                </pre>
+{
+    "recordType": "customer",
+    "recordId": "eid:Customer-111111111",
+    "extension": ""
+}
+            </pre>
         </div>
 
         <div class="example">
             <h4>Ex 3: Get Customer Record with Filtering</h4>
-            <p><strong>Method:</strong>POST, GET</p>
+            <p><strong>Method:</strong> <span class="method-badge method-post">POST</span> <span class="method-badge method-get">GET</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteGetRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
+{
     "recordType": "customer",
     "recordId": "743",
     "extensions": "?fields=EntityId,aging,aging1"
-    }
-         <p><strong>Success Response with Filters:</strong></p>
-    <pre>
+}
+            </pre>
+            <p><strong>Success Response with Filters:</strong></p>
+            <pre>
 {
     "links": [
         {
@@ -602,54 +668,54 @@
     "aging1": 0.0,
     "entityId": "STCO08"
 }
-    </pre>
+            </pre>
         </div>
-            <div class="example">
-                <h4>Ex 4: Non-existent External ID (Error)</h4>
-                <p><strong>Payload:</strong></p>
-                <pre>
-    {
-        "recordType": "customer",
-        "recordId": "eid:DoesNotExist",
-        "extension": ""
-    }
-                </pre>
-                <p><strong>Error Response:</strong></p>
-                <pre>
-    {
-        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
-        "title": "Not Found",
-        "status": 404,
-        "o:errorDetails": [
-            { "detail": "The record instance does not exist. Provide a valid record instance ID.", "o:errorCode": "NONEXISTENT_ID" }
-        ]
-    }
-                </pre>
-            </div>
-            <div class="example">
-                <h4>Ex 5: Permission Error (Error)</h4>
-                <p><strong>Payload:</strong></p>
-                <pre>
-    {
-        "recordType": "customer",
-        "recordId": "6991",
-        "extension": ""
-    }
-                </pre>
-                <p><strong>Error Response:</strong></p>
-                <pre>
-    {
-        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3",
-        "title": "Forbidden",
-        "status": 403,
-        "o:errorDetails": [
-            { "detail": "You do not have permission to view this record.", "o:errorCode": "PERMISSION_DENIED" }
-        ]
-    }
-                </pre>
 
+        <div class="example">
+            <h4>Ex 4: Non-existent External ID (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "recordId": "eid:DoesNotExist",
+    "extension": ""
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+    "title": "Not Found",
+    "status": 404,
+    "o:errorDetails": [
+        { "detail": "The record instance does not exist. Provide a valid record instance ID.", "o:errorCode": "NONEXISTENT_ID" }
+    ]
+}
+            </pre>
+        </div>
 
-
+        <div class="example">
+            <h4>Ex 5: Permission Error (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "recordId": "6991",
+    "extension": ""
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3",
+    "title": "Forbidden",
+    "status": 403,
+    "o:errorDetails": [
+        { "detail": "You do not have permission to view this record.", "o:errorCode": "PERMISSION_DENIED" }
+    ]
+}
+            </pre>
+        </div>
 
         <h2 id="netsuiteTransformRequest">Function: <code>netsuiteTransformRequest</code></h2>
         <p><strong>Endpoint:</strong>
@@ -658,89 +724,89 @@
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <h4>Parameters</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-            <tr><td>fromRecordType</td><td>string</td><td>Yes</td><td>Source record type (e.g., salesOrder).</td></tr>
-            <tr><td>fromId</td><td>string</td><td>Yes</td><td>Source record ID.</td></tr>
-            <tr><td>toRecordType</td><td>string</td><td>Yes</td><td>Target record type (e.g., itemFulfillment).</td></tr>
-            <tr><td>requestBody</td><td>object</td><td>No</td><td>Optional fields for the transformation.</td></tr>
+            <tr><td>fromRecordType</td><td>string</td><td class="required-yes">Yes</td><td>Source record type (e.g., salesOrder).</td></tr>
+            <tr><td>fromId</td><td>string</td><td class="required-yes">Yes</td><td>Source record ID.</td></tr>
+            <tr><td>toRecordType</td><td>string</td><td class="required-yes">Yes</td><td>Target record type (e.g., itemFulfillment).</td></tr>
+            <tr><td>requestBody</td><td>object</td><td class="required-no">No</td><td>Optional fields for the transformation.</td></tr>
         </table>
 
         <div class="example">
             <h4>Ex 1: Sales Order to Item Fulfillment</h4>
-            <p><strong>Method:</strong> POST</p>
+            <p><strong>Method:</strong> <span class="method-badge method-post">POST</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteTransformRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "fromRecordType": "salesOrder",
-        "fromId": "1080",
-        "toRecordType": "itemFulfillment",
-        "requestBody": {
-            "memo": "test memo details",
-            "item": {
-                "items": [
-                            {
-                              "orderLine": 1,
-                              "quantity": 2,
-                              "itemReceive": true
-                            }
-                        ]
-                    }
+{
+    "fromRecordType": "salesOrder",
+    "fromId": "1080",
+    "toRecordType": "itemFulfillment",
+    "requestBody": {
+        "memo": "test memo details",
+        "item": {
+            "items": [
+                {
+                    "orderLine": 1,
+                    "quantity": 2,
+                    "itemReceive": true
+                }
+            ]
         }
     }
-    </pre>
-                <h4>Ex 2: Missing Required Transformation Field (Error)</h4>
-                <p><strong>Payload:</strong></p>
-                <pre>
-    {
-        "fromRecordType": "salesOrder",
-        "fromId": "1080",
-        "toRecordType": "itemFulfillment"
-    }
-                </pre>
-                <p><strong>Error Response:</strong></p>
-                <pre>
-    {
-        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
-        "title": "Bad Request",
-        "status": 400,
-        "o:errorDetails": [
-            { "detail": "Missing required transformation field: requestBody.item", "o:errorCode": "USER_ERROR" }
-        ]
-    }
-                </pre>
-                <h4>Ex 3: Multi-line Transformation</h4>
-                <p><strong>Payload:</strong></p>
-                <pre>
-    {
-        "fromRecordType": "salesOrder",
-        "fromId": "1080",
-        "toRecordType": "itemFulfillment",
-        "requestBody": {
-            "memo": "multi-line",
-            "item": {
-                "items": [
-                    { "orderLine": 1, "quantity": 2, "itemReceive": true },
-                    { "orderLine": 2, "quantity": 1, "itemReceive": true }
-                ]
-            }
+}
+            </pre>
+            <h4>Ex 2: Missing Required Transformation Field (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "fromRecordType": "salesOrder",
+    "fromId": "1080",
+    "toRecordType": "itemFulfillment"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
+    "title": "Bad Request",
+    "status": 400,
+    "o:errorDetails": [
+        { "detail": "Missing required transformation field: requestBody.item", "o:errorCode": "USER_ERROR" }
+    ]
+}
+            </pre>
+            <h4>Ex 3: Multi-line Transformation</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "fromRecordType": "salesOrder",
+    "fromId": "1080",
+    "toRecordType": "itemFulfillment",
+    "requestBody": {
+        "memo": "multi-line",
+        "item": {
+            "items": [
+                { "orderLine": 1, "quantity": 2, "itemReceive": true },
+                { "orderLine": 2, "quantity": 1, "itemReceive": true }
+            ]
         }
     }
-                </pre>
-                <p><strong>Success Response:</strong> (truncated)</p>
-                <pre>
-    {
-        "title": "Success",
-        "status": 200,
-        "message": "The Transform operation was completed successfully.",
-        "internalid": "980",
-        "from_internalId": "1080"
-    }
-                </pre>
+}
+            </pre>
+            <p><strong>Success Response:</strong> (truncated)</p>
+            <pre>
+{
+    "title": "Success",
+    "status": 200,
+    "message": "The Transform operation was completed successfully.",
+    "internalid": "980",
+    "from_internalId": "1080"
+}
+            </pre>
             <h4>Ex 4: Invalid Transformation (Error)</h4>
             <p><strong>Payload:</strong></p>
             <pre>
@@ -773,64 +839,64 @@
         <p><strong>Authentication:</strong> Required (<code>x-functions-key</code>)</p>
 
         <h4>Parameters</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
-            <tr><td>recordType</td><td>string</td><td>Yes</td><td>Type of NetSuite record to delete.</td></tr>
-            <tr><td>recordId</td><td>string</td><td>Yes</td><td>Internal or external ID of the record.</td></tr>
+            <tr><td>recordType</td><td>string</td><td class="required-yes">Yes</td><td>Type of NetSuite record to delete.</td></tr>
+            <tr><td>recordId</td><td>string</td><td class="required-yes">Yes</td><td>Internal or external ID of the record.</td></tr>
         </table>
 
         <div class="example">
             <h4>Ex 1: Delete Customer Record</h4>
-            <p><strong>Method:</strong> DELETE</p>
+            <p><strong>Method:</strong> <span class="method-badge method-delete">DELETE</span></p>
             <p><strong>URL:</strong>
                 <code>https://nsrestinterface-{companyName}.azurewebsites.net/api/netsuiteDeleteRequest</code>
             </p>
             <p><strong>Headers:</strong> <code>x-functions-key</code></p>
             <p><strong>Payload:</strong></p>
             <pre>
-    {
-        "recordType": "customer",
-        "recordId": "6993"
-    }
-                </pre>
-                <h4>Ex 2: Already Deleted Record (Error)</h4>
-                <p><strong>Payload:</strong></p>
-                <pre>
-    {
-        "recordType": "customer",
-        "recordId": "6993"
-    }
-                </pre>
-                <p><strong>Error Response:</strong></p>
-                <pre>
-    {
-        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
-        "title": "Not Found",
-        "status": 404,
-        "o:errorDetails": [
-            { "detail": "The record instance does not exist. Provide a valid record instance ID.", "o:errorCode": "NONEXISTENT_ID" }
-        ]
-    }
-                </pre>
-                <h4>Ex 3: Permission Error (Error)</h4>
-                <p><strong>Payload:</strong></p>
-                <pre>
-    {
-        "recordType": "customer",
-        "recordId": "6991"
-    }
-                </pre>
-                <p><strong>Error Response:</strong></p>
-                <pre>
-    {
-        "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3",
-        "title": "Forbidden",
-        "status": 403,
-        "o:errorDetails": [
-            { "detail": "You do not have permission to delete this record.", "o:errorCode": "PERMISSION_DENIED" }
-        ]
-    }
-                </pre>
+{
+    "recordType": "customer",
+    "recordId": "6993"
+}
+            </pre>
+            <h4>Ex 2: Already Deleted Record (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "recordId": "6993"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5",
+    "title": "Not Found",
+    "status": 404,
+    "o:errorDetails": [
+        { "detail": "The record instance does not exist. Provide a valid record instance ID.", "o:errorCode": "NONEXISTENT_ID" }
+    ]
+}
+            </pre>
+            <h4>Ex 3: Permission Error (Error)</h4>
+            <p><strong>Payload:</strong></p>
+            <pre>
+{
+    "recordType": "customer",
+    "recordId": "6991"
+}
+            </pre>
+            <p><strong>Error Response:</strong></p>
+            <pre>
+{
+    "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.3",
+    "title": "Forbidden",
+    "status": 403,
+    "o:errorDetails": [
+        { "detail": "You do not have permission to delete this record.", "o:errorCode": "PERMISSION_DENIED" }
+    ]
+}
+            </pre>
         </div>
 
         <h2 id="error-handling">Error Handling</h2>
@@ -838,18 +904,20 @@
         <p>A missing or invalid authentication 'x-functions-key' passed in the API call will result in a <strong>401 Unauthorized</strong> error code response.</p>
         <p><strong>Improperly Formatted Requests</strong></p>
         <p>Queries or Post Requests that do not contain valid JSON will result in a <strong>500</strong> error code response. Ensure all objects are properly wrapped and formatted before proceeding.</p>
-        <p><strong>SuiteQL & REST Requests</strong></p>
+        <p><strong>SuiteQL &amp; REST Requests</strong></p>
         <p>All NetSuite error messages are returned from the server upon a failed API call, along with a <strong>400</strong> error code response. The format of the messages is inherited from the NetSuite server and typically resembles the below message.</p>
         <h4>Common Error Codes</h4>
-        <table border="1" cellpadding="4" cellspacing="0">
+        <table>
             <tr><th>Status Code</th><th>Error Code</th><th>Description</th></tr>
             <tr><td>400</td><td>INVALID_PARAMETER</td><td>Invalid input or parameter value.</td></tr>
             <tr><td>400</td><td>USER_ERROR</td><td>Business logic or validation error.</td></tr>
-            <tr><td>404</td><td>NONEXISTENT_ID</td><td>Record not found.</td></tr>
             <tr><td>401</td><td>UNAUTHORIZED</td><td>Missing or invalid authentication key.</td></tr>
+            <tr><td>403</td><td>PERMISSION_DENIED</td><td>Insufficient permissions to perform the operation.</td></tr>
+            <tr><td>404</td><td>NONEXISTENT_ID</td><td>Record not found.</td></tr>
             <tr><td>500</td><td>INTERNAL_SERVER_ERROR</td><td>Malformed request or server error.</td></tr>
         </table>
-<div class="example">
+
+        <div class="example">
             <pre>
 {
     "type": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.1",
@@ -862,27 +930,115 @@
         }
     ]
 }
-</pre>
+            </pre>
         </div>
 
         <h2 id="additional-resources">Additional Resources</h2>
         <ul>
             <li><a href="https://citrincooperman.sharepoint.com/sites/MDS-KM/Toolkit/Forms/AllItems.aspx?id=%2Fsites%2FMDS%2DKM%2FToolkit%2FAzure%20%2D%20NetSuite%20REST%20Connector&newTargetListUrl=%2Fsites%2FMDS%2DKM%2FToolkit&viewpath=%2Fsites%2FMDS%2DKM%2FToolkit%2FForms%2FAllItems%2Easpx">Digital Services - Resource Folder</a></li>
-            <li><a href="https://system.netsuite.com/help/helpcenter/en_US/APIs/REST_API_Browser/record/v1/2025.1/index.html">NetSuite
-                    REST Record Browser</a></li>
-            <li><a href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156257770590.html">NetSuite
-                    SuiteQL Documentation</a></li>
-            <li><a href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_158394344595.html">NetSuite:
-                    Using SuiteQL with REST Web Services</a></li>
-            <li><a
-                    href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156257790831.html#subsect_156474852230">NetSuite:
-                    SuiteQL Syntax and Examples</a></li>
-            <li><a
-                    href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156257796125.html#subsect_0204025626">NetSuite:
-                    SuiteQL Limitations and Exceptions</a></li>
+            <li><a href="https://system.netsuite.com/help/helpcenter/en_US/APIs/REST_API_Browser/record/v1/2025.1/index.html">NetSuite REST Record Browser</a></li>
+            <li><a href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156257770590.html">NetSuite SuiteQL Documentation</a></li>
+            <li><a href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_158394344595.html">NetSuite: Using SuiteQL with REST Web Services</a></li>
+            <li><a href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156257790831.html#subsect_156474852230">NetSuite: SuiteQL Syntax and Examples</a></li>
+            <li><a href="https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_156257796125.html#subsect_0204025626">NetSuite: SuiteQL Limitations and Exceptions</a></li>
             <li><a href="https://timdietrich.me/suiteql-query-library/">Tim Dietrich's SuiteQL Query Library</a></li>
         </ul>
     </div>
+
+    <script>
+    // Sidebar active link highlighting
+    (function () {
+        const sidebar = document.getElementById('sidebarNav');
+        if (!sidebar) return;
+        const links = sidebar.querySelectorAll('a');
+        const sectionIds = Array.from(links).map(link => link.getAttribute('href'));
+        const sections = sectionIds.map(id => document.querySelector(id));
+
+        function activateLink() {
+            let found = false;
+            const scrollPos = window.scrollY + 100;
+            links.forEach((link, i) => {
+                link.classList.remove('active');
+                const section = sections[i];
+                if (section && !found && scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
+                    link.classList.add('active');
+                    found = true;
+                }
+            });
+        }
+
+        links.forEach((link, i) => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const section = sections[i];
+                if (section) {
+                    window.scrollTo({ top: section.offsetTop - 20, behavior: 'smooth' });
+                }
+                links.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                // Close mobile sidebar on navigation
+                sidebar.classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('open');
+            });
+        });
+
+        window.addEventListener('scroll', activateLink);
+        activateLink();
+    })();
+
+    // Mobile hamburger menu
+    (function () {
+        const btn = document.getElementById('hamburgerBtn');
+        const sidebar = document.getElementById('sidebarNav');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (!btn || !sidebar || !overlay) return;
+
+        btn.addEventListener('click', function () {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        });
+        overlay.addEventListener('click', function () {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        });
+    })();
+
+    // Copy-to-clipboard buttons for all <pre> blocks
+    (function () {
+        function getCleanText(pre) {
+            // Clone without the copy button text
+            const clone = pre.cloneNode(true);
+            const btn = clone.querySelector('.copy-btn');
+            if (btn) btn.remove();
+            const text = clone.textContent;
+            const lines = text.split('\n');
+            while (lines.length && lines[0].trim() === '') lines.shift();
+            while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+            const minIndent = lines.reduce((min, line) => {
+                if (line.trim() === '') return min;
+                const leading = line.match(/^(\s*)/)[1].length;
+                return Math.min(min, leading);
+            }, Infinity);
+            return lines.map(l => l.slice(minIndent === Infinity ? 0 : minIndent)).join('\n');
+        }
+
+        document.querySelectorAll('pre').forEach(function (pre) {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'Copy';
+            btn.addEventListener('click', function () {
+                navigator.clipboard.writeText(getCleanText(pre)).then(function () {
+                    btn.textContent = 'Copied!';
+                    setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+                }).catch(function () {
+                    btn.textContent = 'Error';
+                    setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+                });
+            });
+            pre.appendChild(btn);
+        });
+    })();
+    </script>
 </body>
 
 </html>

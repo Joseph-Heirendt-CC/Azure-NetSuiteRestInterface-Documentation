@@ -8,24 +8,31 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\jHeirendt_ds1\\.nuget\\packages\\": {}
+    "C:\\Users\\JosephHeirendt\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\New folder (2)\\StaticWebApp\\StaticWebApp.csproj",
+      "projectUniqueName": "C:\\Users\\JosephHeirendt\\source\\repos\\Azure-NetSuiteRestInterface-Documentation\\StaticWebApp\\StaticWebApp.csproj",
       "projectName": "StaticWebApp",
-      "projectPath": "C:\\New folder (2)\\StaticWebApp\\StaticWebApp.csproj",
-      "packagesPath": "C:\\Users\\jHeirendt_ds1\\.nuget\\packages\\",
-      "outputPath": "C:\\New folder (2)\\StaticWebApp\\obj\\",
+      "projectPath": "C:\\Users\\JosephHeirendt\\source\\repos\\Azure-NetSuiteRestInterface-Documentation\\StaticWebApp\\StaticWebApp.csproj",
+      "packagesPath": "C:\\Users\\JosephHeirendt\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\JosephHeirendt\\source\\repos\\Azure-NetSuiteRestInterface-Documentation\\StaticWebApp\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\jHeirendt_ds1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\JosephHeirendt\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -43,7 +50,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "direct"
-      }
+      },
+      "SdkAnalysisLevel": "9.0.300"
     },
     "frameworks": {
       "net8.0": {
@@ -67,7 +75,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.406/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
