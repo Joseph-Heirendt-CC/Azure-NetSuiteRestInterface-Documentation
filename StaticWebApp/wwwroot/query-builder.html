@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SuiteQL Query Builder — visually construct multi-table SuiteQL queries for NetSuite.">
+    <meta name="description" content="SuiteQL Query Builders — visually construct multi-table SuiteQL queries for NetSuite.">
     <title>SuiteQL Query Builder — Azure NetSuite REST Interface</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; }
@@ -445,6 +445,67 @@
         .msg-err { background: #f8d7da; color: #721c24; }
         .msg-ok  { background: #d4edda; color: #155724; }
 
+        /* ── Payload Box ── */
+        .payload-pre {
+            background: #1a2038;
+            color: #a8d8a8;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 0.83em;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 10px 0 0 0;
+            position: relative;
+        }
+        .payload-label {
+            font-size: 0.75em;
+            font-weight: 700;
+            color: #aaa4a5;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        /* ── Debug Panel ── */
+        .debug-panel {
+            background: #0f1420;
+            border: 1px solid #3d4f7c;
+            border-radius: 8px;
+            margin-top: 14px;
+            overflow: hidden;
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+        }
+        .debug-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 14px;
+            background: #1a2038;
+            border-bottom: 1px solid #3d4f7c;
+        }
+        .debug-header span {
+            font-size: 0.8em;
+            font-weight: 700;
+            color: #aaa4a5;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+        }
+        .debug-log {
+            padding: 10px 14px;
+            max-height: 280px;
+            overflow-y: auto;
+            font-size: 0.78em;
+            color: #8ba8c8;
+            line-height: 1.6;
+        }
+        .debug-log .log-ts   { color: #4a6080; }
+        .debug-log .log-info { color: #8ba8c8; }
+        .debug-log .log-send { color: #c8a840; }
+        .debug-log .log-ok   { color: #60c080; }
+        .debug-log .log-err  { color: #e06060; }
+        .debug-log .log-data { color: #7090b0; margin-left: 16px; }
+
         /* ── Mobile ── */
         @media (max-width: 820px) {
             .layout { grid-template-columns: 1fr; }
@@ -572,6 +633,15 @@
                     <pre class="query-pre" id="queryPreview">-- Select a base table to begin.</pre>
                     <button class="copy-btn" onclick="copyQuery()">Copy</button>
                 </div>
+                <!-- Payload Box -->
+                <div style="margin-top:12px;">
+                    <div class="payload-label">Payload (JSON)</div>
+                    <div class="preview-wrap">
+                        <pre class="payload-pre" id="payloadPreview">{ "query": "" }</pre>
+                        <button class="copy-btn" id="copyPayloadBtn" onclick="copyPayload()">Copy</button>
+                    </div>
+                </div>
+
                 <div class="exec-row">
                     <button class="btn btn-primary" id="execBtn" onclick="executeQuery()">&#9654; Execute</button>
                     <span id="execMsg"></span>
@@ -590,6 +660,17 @@
             </div>
             <div class="results-table-wrap">
                 <table class="results-table" id="resultsTable"></table>
+            </div>
+        </div>
+
+        <!-- Debug Log -->
+        <div class="debug-panel">
+            <div class="debug-header">
+                <span>&#128269; Debug Log</span>
+                <button class="btn-ghost btn-sm" onclick="clearDebugLog()" style="color:#aaa4a5;border-color:#3d4f7c;">Clear</button>
+            </div>
+            <div class="debug-log" id="debugLog">
+                <span class="log-info">Debug log ready. API calls and query formatting will appear here.</span>
             </div>
         </div>
 
@@ -1182,6 +1263,14 @@ function buildQuery() {
 
     document.getElementById('queryPreview').textContent = sql;
     lastQuery = sql;
+
+    // Payload box
+    const payload = JSON.stringify({ query: sql }, null, 2);
+    document.getElementById('payloadPreview').textContent = payload;
+
+    // Debug log
+    dbg('info', `Query built — ${sql.split('\n').length} lines, ${sql.length} chars`);
+    dbg('data', sql.replace(/\n/g, ' ').slice(0, 200) + (sql.length > 200 ? '…' : ''));
 }
 
 // ════════════════════════════════════════════════
@@ -1194,6 +1283,37 @@ function copyQuery() {
         btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = 'Copy', 1500);
     });
+}
+
+function copyPayload() {
+    const text = document.getElementById('payloadPreview').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyPayloadBtn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+    });
+}
+
+// ════════════════════════════════════════════════
+//  DEBUG LOG
+// ════════════════════════════════════════════════
+function dbg(type, message) {
+    const log = document.getElementById('debugLog');
+    if (!log) return;
+    const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit', fractionalSecondDigits: 3 });
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="log-ts">[${ts}]</span> <span class="log-${type}">${escHtml(message)}</span>`;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+}
+
+function clearDebugLog() {
+    const log = document.getElementById('debugLog');
+    log.innerHTML = '<span class="log-info">Log cleared.</span>';
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ════════════════════════════════════════════════
@@ -1211,23 +1331,41 @@ function getKey() {
 async function runQuery(query, nextPageLink) {
     const body = { query };
     if (nextPageLink) body.nextPageLink = nextPageLink;
+    const endpoint = getEndpoint();
+    const bodyJson = JSON.stringify(body, null, 2);
+
+    dbg('send', `POST ${endpoint}`);
+    dbg('data', `Payload: ${bodyJson.replace(/\n/g, ' ')}`);
+
     let resp;
     try {
-        resp = await fetch(getEndpoint(), {
+        resp = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-functions-key': getKey() },
             body: JSON.stringify(body)
         });
     } catch (networkErr) {
+        dbg('err', `Network error: ${networkErr.message}`);
         throw new Error(`Network error — check companyName and that the Function App is reachable. (${networkErr.message})`);
     }
+
+    dbg('info', `Response: HTTP ${resp.status} ${resp.statusText}`);
+
     const text = await resp.text();
+    dbg('data', `Body (${text.length} chars): ${text.slice(0, 300)}${text.length > 300 ? '…' : ''}`);
+
     let data;
     try { data = JSON.parse(text); } catch { data = null; }
+
     if (!resp.ok) {
         const detail = data?.['o:errorDetails']?.[0]?.detail || data?.detail || data?.title || text.slice(0, 120);
+        dbg('err', `Error detail: ${detail}`);
         throw new Error(`HTTP ${resp.status}: ${detail}`);
     }
+
+    if (data?.items !== undefined) dbg('ok', `Success — ${data.count ?? data.items.length} rows, hasMore=${data.hasMore}`);
+    else dbg('ok', 'Success');
+
     return data;
 }
 
@@ -1248,13 +1386,16 @@ async function testConnection() {
     btn.disabled = true;
     statusEl.className = 'conn-status idle';
     statusEl.innerHTML = '<span class="conn-dot"></span> Testing…';
+    dbg('info', `Testing connection → nsrestinterface-${cn}.azurewebsites.net`);
     try {
         await runQuery("SELECT id FROM transaction FETCH FIRST 1 ROWS ONLY");
         statusEl.className = 'conn-status ok';
         statusEl.innerHTML = '<span class="conn-dot"></span> Connected';
+        dbg('ok', 'Connection test passed');
     } catch (e) {
         statusEl.className = 'conn-status err';
         statusEl.innerHTML = '<span class="conn-dot"></span> ' + e.message.slice(0, 80);
+        dbg('err', `Connection test failed: ${e.message}`);
     } finally {
         btn.textContent = 'Test Connection';
         btn.disabled = false;
@@ -1308,6 +1449,7 @@ async function executeQuery() {
     btn.disabled = true;
     clearMsg('execMsg');
     lastNextPageLink = null;
+    dbg('info', '─── Execute Query ───');
 
     try {
         const data = await runQuery(lastQuery);
