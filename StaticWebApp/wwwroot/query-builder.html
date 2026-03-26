@@ -1211,13 +1211,23 @@ function getKey() {
 async function runQuery(query, nextPageLink) {
     const body = { query };
     if (nextPageLink) body.nextPageLink = nextPageLink;
-    const resp = await fetch(getEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-functions-key': getKey() },
-        body: JSON.stringify(body)
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data?.['o:errorDetails']?.[0]?.detail || `HTTP ${resp.status}`);
+    let resp;
+    try {
+        resp = await fetch(getEndpoint(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-functions-key': getKey() },
+            body: JSON.stringify(body)
+        });
+    } catch (networkErr) {
+        throw new Error(`Network error — check companyName and that the Function App is reachable. (${networkErr.message})`);
+    }
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = null; }
+    if (!resp.ok) {
+        const detail = data?.['o:errorDetails']?.[0]?.detail || data?.detail || data?.title || text.slice(0, 120);
+        throw new Error(`HTTP ${resp.status}: ${detail}`);
+    }
     return data;
 }
 
@@ -1225,17 +1235,26 @@ async function runQuery(query, nextPageLink) {
 //  TEST CONNECTION
 // ════════════════════════════════════════════════
 async function testConnection() {
-    const btn = document.getElementById('testConnBtn');
+    const cn = document.getElementById('companyName').value.trim();
+    const fk = document.getElementById('functionsKey').value.trim();
     const statusEl = document.getElementById('connStatus');
+    if (!cn || !fk) {
+        statusEl.className = 'conn-status err';
+        statusEl.innerHTML = '<span class="conn-dot"></span> Enter companyName and API key first';
+        return;
+    }
+    const btn = document.getElementById('testConnBtn');
     btn.textContent = '…';
     btn.disabled = true;
+    statusEl.className = 'conn-status idle';
+    statusEl.innerHTML = '<span class="conn-dot"></span> Testing…';
     try {
         await runQuery("SELECT id FROM transaction FETCH FIRST 1 ROWS ONLY");
         statusEl.className = 'conn-status ok';
         statusEl.innerHTML = '<span class="conn-dot"></span> Connected';
     } catch (e) {
         statusEl.className = 'conn-status err';
-        statusEl.innerHTML = '<span class="conn-dot"></span> ' + e.message.slice(0, 60);
+        statusEl.innerHTML = '<span class="conn-dot"></span> ' + e.message.slice(0, 80);
     } finally {
         btn.textContent = 'Test Connection';
         btn.disabled = false;
