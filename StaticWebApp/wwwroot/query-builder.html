@@ -1209,6 +1209,11 @@ function buildQuery() {
         return;
     }
 
+    // LIMIT
+    const limit = parseInt(document.getElementById('limitVal').value) || 100;
+    const offset = parseInt(document.getElementById('offsetVal').value) || 0;
+    const topClause = `TOP ${limit} `;
+
     // SELECT clause
     const selKeys = Object.keys(selectedCols);
     let selectClause;
@@ -1216,7 +1221,6 @@ function buildQuery() {
         selectClause = `${currentBaseTable}.*`;
     } else {
         const allTables = getAllSelectedTables();
-        // Use alias if multiple tables
         if (allTables.length === 1) {
             selectClause = selKeys.map(k => k.split('.')[1]).join(',\n       ');
         } else {
@@ -1225,7 +1229,7 @@ function buildQuery() {
     }
 
     // FROM
-    let sql = `SELECT ${selectClause}\nFROM   ${currentBaseTable}`;
+    let sql = `SELECT ${topClause}${selectClause}\nFROM   ${currentBaseTable}`;
 
     // JOINs
     joins.forEach(j => {
@@ -1255,17 +1259,14 @@ function buildQuery() {
     const orderDir = document.getElementById('orderDir').value;
     if (orderCol) sql += `\nORDER BY ${orderCol} ${orderDir}`;
 
-    // LIMIT / OFFSET
-    const limit = parseInt(document.getElementById('limitVal').value) || 100;
-    const offset = parseInt(document.getElementById('offsetVal').value) || 0;
-    sql += `\nFETCH FIRST ${limit} ROWS ONLY`;
-    if (offset > 0) sql = sql.replace(`FROM   ${currentBaseTable}`, `/* OFFSET ${offset} applied via nextPageLink */\nFROM   ${currentBaseTable}`);
+    // OFFSET note (applied via nextPageLink at runtime)
+    if (offset > 0) sql += `\n-- OFFSET ${offset} applied via nextPageLink`;
 
     document.getElementById('queryPreview').textContent = sql;
     lastQuery = sql;
 
     // Payload box
-    const payload = JSON.stringify({ query: sql }, null, 2);
+    const payload = JSON.stringify({ nextPageLink: '', query: sql }, null, 2);
     document.getElementById('payloadPreview').textContent = payload;
 
     // Debug log
@@ -1329,8 +1330,7 @@ function getKey() {
 }
 
 async function runQuery(query, nextPageLink) {
-    const body = { query };
-    if (nextPageLink) body.nextPageLink = nextPageLink;
+    const body = { nextPageLink: nextPageLink || '', query };
     const endpoint = getEndpoint();
     const bodyJson = JSON.stringify(body, null, 2);
 
@@ -1388,7 +1388,7 @@ async function testConnection() {
     statusEl.innerHTML = '<span class="conn-dot"></span> Testing…';
     dbg('info', `Testing connection → nsrestinterface-${cn}.azurewebsites.net`);
     try {
-        await runQuery("SELECT id FROM transaction FETCH FIRST 1 ROWS ONLY");
+        await runQuery("SELECT TOP 1 id FROM transaction");
         statusEl.className = 'conn-status ok';
         statusEl.innerHTML = '<span class="conn-dot"></span> Connected';
         dbg('ok', 'Connection test passed');
@@ -1411,10 +1411,10 @@ async function loadColumnsFromNS(tableName) {
         alert('Enter connection settings first.'); return;
     }
     try {
-        const data = await runQuery(`SELECT * FROM ${tableName} FETCH FIRST 0 ROWS ONLY`);
+        const data = await runQuery(`SELECT TOP 1 * FROM ${tableName}`);
         // Some NS instances return columns in items even with 0 rows via metadata
         // Try to get columns from a 1-row query fallback
-        const data1 = await runQuery(`SELECT * FROM ${tableName} FETCH FIRST 1 ROWS ONLY`);
+        const data1 = await runQuery(`SELECT TOP 1 * FROM ${tableName}`);
         if (data1.items && data1.items.length > 0) {
             const cols = Object.keys(data1.items[0]).map(name => ({ name, type: 'string' }));
             SCHEMA[tableName] = SCHEMA[tableName] || { label: tableName, columns: [], joins: [] };
